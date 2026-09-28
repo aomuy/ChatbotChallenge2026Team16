@@ -4,49 +4,188 @@ Crawl both websites, extract readable text as structured sections, and
 collect image records in the same pass. Run this file directly to
 (re)build data/pages.json and data/images.json.
 
-Check for /sitemap.xml before writing a crawler. If it exists it lists
-every page and you can skip the crawl entirely.
+Both permitted sites are WordPress and publish /sitemap.xml, which
+redirects to /wp-sitemap.xml. That index lists every page, so this
+scraper reads the sitemap and does not follow links. A breadth-first
+crawler remains only as a fallback if the sitemap is missing.
 """
 import json
+import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
+from xml.etree import ElementTree as ET
 
 import requests
 from bs4 import BeautifulSoup, Tag
 
+# Official permitted sources from the challenge page:
+# https://innowings.engg.hku.hk/innowing1/
+# https://innoacademy.engg.hku.hk/
 SITES = [
-    # TODO: the two Inno Wing sites you were given
     "https://innowings.engg.hku.hk/innowing1/",
-    "https://innoacademy.engg.hku.hk",
+    "https://innoacademy.engg.hku.hk/",
 ]
 
 HEADING_MAX_LEN = 120
+SITEMAP_NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+# Archive pages repeat post excerpts already stored as their own URLs.
+ARCHIVE_ROOTS = {"author", "tag", "category", "wp-json"}
+# Safety cap for a broken sitemap or a crawler loop. Both real sitemaps
+# are well under this (about 1,200 content URLs together).
+MAX_PAGES = 2000
+HEADERS = {"User-Agent": "HKU-ChatbotChallenge-Team16/1.0 (course project)"}
+
+SESSION = requests.Session()
+SESSION.headers.update(HEADERS)
 
 
-def crawl(start_url: str, max_pages: int = 500) -> list[str]:
-    """Return every page URL on the same site as start_url."""
+def _origin(url: str) -> str:
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _canonical(url: str) -> str:
+    parsed = urlparse(url)
+    path = parsed.path or "/"
+    if path != "/":
+        path = path.rstrip("/")
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def _in_scope(url: str, start_url: str) -> bool:
+    """Keep HTML pages on this host. Drop archives and Wing Two.
+
+    The Innovation Wing sitemap covers the whole domain, including
+    Innovation Wing Two. The permitted source is Wing One only
+    (https://innowings.engg.hku.hk/innowing1/). Project posts live at
+    the domain root rather than under /innowing1/, so those stay in;
+    paths that name Wing Two are dropped.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    if parsed.netloc != urlparse(start_url).netloc:
+        return False
+    if parsed.path.lower().endswith((
+        ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+        ".pdf", ".zip", ".mp4", ".mp3", ".css", ".js",
+    )):
+        return False
+    parts = [part for part in parsed.path.split("/") if part]
+    if parts and parts[0] in ARCHIVE_ROOTS:
+        return False
+    if parsed.netloc == "innowings.engg.hku.hk":
+        path = parsed.path.lower()
+        if "/innowing2" in path or "/innowing-two" in path:
+            return False
+    return True
+
+
+def _sitemap_locs(xml_bytes: bytes) -> tuple[str, list[str]]:
+    root = ET.fromstring(xml_bytes)
+    kind = root.tag.rsplit("}", 1)[-1]
+    locs = [
+        node.text.strip()
+        for node in root.findall(".//sm:loc", SITEMAP_NS)
+        if node.text and node.text.strip()
+    ]
+    return kind, locs
+
+
+def urls_from_sitemap(start_url: str) -> list[str] | None:
+    """Return page URLs from /sitemap.xml, or None if it is not there.
+
+    WordPress serves a sitemap index. /sitemap.xml redirects to
+    /wp-sitemap.xml, whose children are the post, page, and archive lists.
+    """
+    origin = _origin(start_url)
+    try:
+        response = SESSION.get(f"{origin}/sitemap.xml", timeout=30)
+        response.raise_for_status()
+    except requests.RequestException:
+        return None
+    if "xml" not in response.headers.get("Content-Type", "") and not response.content.lstrip().startswith(b"<?xml"):
+        return None
+
+    try:
+        kind, locs = _sitemap_locs(response.content)
+    except ET.ParseError:
+        return None
+
+    page_urls: list[str] = []
+    pending = locs if kind == "sitemapindex" else []
+    if kind == "urlset":
+        page_urls.extend(locs)
+
+    seen_maps = set()
+    while pending:
+        map_url = pending.pop(0)
+        if map_url in seen_maps:
+            continue
+        seen_maps.add(map_url)
+        try:
+            child = SESSION.get(map_url, timeout=30)
+            child.raise_for_status()
+            child_kind, child_locs = _sitemap_locs(child.content)
+        except (requests.RequestException, ET.ParseError):
+            continue
+        if child_kind == "sitemapindex":
+            pending.extend(child_locs)
+        else:
+            page_urls.extend(child_locs)
+
+    deduped = []
+    seen = set()
+    for url in page_urls:
+        if not _in_scope(url, start_url):
+            continue
+        key = _canonical(url)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(url.split("#")[0])
+    return deduped
+
+
+def _crawl_links(start_url: str, max_pages: int) -> list[str]:
+    """Breadth-first fallback used only when a site has no sitemap."""
     seen, queue, out = set(), [start_url], []
     domain = urlparse(start_url).netloc
 
     while queue and len(out) < max_pages:
         url = queue.pop(0)
-        if url in seen:
+        key = _canonical(url)
+        if key in seen:
             continue
-        seen.add(url)
+        seen.add(key)
         try:
-            html = requests.get(url, timeout=20).text
-        except Exception:
+            html = SESSION.get(url, timeout=20).text
+        except requests.RequestException:
             continue
-        out.append(url)
+        out.append(url.split("#")[0])
 
-        # TODO find the links on this page and add the internal ones to
-        # TODO queue, something like:
-        # for a in BeautifulSoup(html, "html.parser").select("a[href]"):
-        #     link = urljoin(url, a["href"]).split("#")[0]
-        #     if urlparse(link).netloc == domain and link not in seen:
-        #         queue.append(link)
+        for anchor in BeautifulSoup(html, "html.parser").select("a[href]"):
+            link = urljoin(url, anchor["href"]).split("#")[0].split("?")[0]
+            if urlparse(link).netloc == domain and _canonical(link) not in seen:
+                if _in_scope(link, start_url):
+                    queue.append(link)
 
     return out
+
+
+def crawl(start_url: str, max_pages: int = MAX_PAGES) -> list[str]:
+    """Return page URLs for start_url's site.
+
+    Prefer the sitemap. Link-following is the fallback.
+    """
+    sitemap_urls = urls_from_sitemap(start_url)
+    if sitemap_urls:
+        print(f"sitemap {start_url}: {len(sitemap_urls)} urls")
+        if len(sitemap_urls) > max_pages:
+            print(f"capping {len(sitemap_urls)} urls at {max_pages}")
+        return sitemap_urls[:max_pages]
+    print(f"no sitemap for {start_url}; crawling links")
+    return _crawl_links(start_url, max_pages)
 
 
 def _norm(text: str) -> str:
@@ -261,21 +400,34 @@ def extract(html: str, url: str) -> dict:
     }
 
 
+def _write_corpus(pages: list[dict]) -> None:
+    Path("data").mkdir(exist_ok=True)
+    Path("data/pages.json").write_text(
+        json.dumps(pages, indent=1, ensure_ascii=False)
+    )
+    images = [im for page in pages for im in page["images"]]
+    Path("data/images.json").write_text(
+        json.dumps(images, indent=1, ensure_ascii=False)
+    )
+
+
 if __name__ == "__main__":
     pages = []
     for site in SITES:
-        for url in crawl(site):
+        urls = crawl(site)
+        for i, url in enumerate(urls, start=1):
             try:
-                pages.append(extract(requests.get(url, timeout=20).text, url))
+                response = SESSION.get(url, timeout=20)
+                response.raise_for_status()
+                pages.append(extract(response.text, url))
             except Exception as exc:
                 print("skipped", url, exc)
+            if i % 50 == 0 or i == len(urls):
+                _write_corpus(pages)
+                print(f"  fetched {i}/{len(urls)} from {site}", flush=True)
+            time.sleep(0.15)
 
-    Path("data").mkdir(exist_ok=True)
-    Path("data/pages.json").write_text(json.dumps(pages, indent=1))
-
-    images = [im for p in pages for im in p["images"]]
-    Path("data/images.json").write_text(json.dumps(images, indent=1))
-
-    print(f"{len(pages)} pages, {len(images)} images")
-    for p in pages:
-        print(f"  {p['url']}: {len(p['sections'])} sections")
+    _write_corpus(pages)
+    images = [im for page in pages for im in page["images"]]
+    nonempty = sum(1 for page in pages if page["sections"])
+    print(f"{len(pages)} pages ({nonempty} with text), {len(images)} images", flush=True)
