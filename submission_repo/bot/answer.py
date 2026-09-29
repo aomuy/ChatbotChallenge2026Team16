@@ -19,7 +19,7 @@ Reply with the answer only. No explanation, no preamble. If the question
 asks how many, reply with a number.
 
 If the context does not contain the answer, give your best guess anyway.
-Never reply that you do not know."""
+Never reply that you do not know or the context does not contain the answer."""
 
 CONFIG = {
     "k": 5,   # try 3 to 10, tuned in Workshop 1 block 5
@@ -44,12 +44,8 @@ def rag_answer(question: str) -> str:
     Runs once per question with a 30 second budget. Anything expensive
     belongs in build/, not here.
     """
-    chunks = retrieve(question)
-
-    # TODO [W2 b4] once this works: decompose compound questions,
-    # TODO retrieve wide then filter, or filter by metadata before
-    # TODO searching.
-
+    chunks = retrieve(question, k=10)
+    chunks = chunks[:CONFIG["k"]]
     context = "\n\n".join(
         f"[{c['metadata'].get('url', '?')}]\n{c['text']}" for c in chunks
     )
@@ -59,9 +55,16 @@ def rag_answer(question: str) -> str:
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
     ])
 
-    # TODO check the format of what came back: if you asked for a
-    # TODO number, make sure you got one, and strip any stray prose.
-    return reply.strip()
+    #  check the format of what came back: if you asked for a
+    #  number, make sure you got one, and strip any stray prose.
+    reply = reply.strip()
+    if any(keyword in question.lower() for keyword in ["how many", "number of", "how long", "how tall", "how wide"]):
+        import re
+        numbers = re.findall(r'\d+', reply)
+        if numbers:
+            reply = numbers[0]
+
+    return reply
 
 
 def rag_answer_batch(questions: list[str]) -> list[str]:
