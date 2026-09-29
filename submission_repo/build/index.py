@@ -1,4 +1,4 @@
-"""Indexer. STUB. Workshop 1 block 4.
+"""Indexer. Workshop 1 block 4.
 
 Chunk the scraped text and write it to the store. Run this file
 directly, after build/scrape.py, to (re)build data/chroma.
@@ -21,27 +21,42 @@ def chunk(text: str, size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> list[str
     date at char 998 and its event name at char 1002 land in different
     chunks and neither answers the question.
 
-    TODO try a better strategy once this works: split on headings
-    TODO first, fall back to characters last, and prepend the section
-    TODO heading to each chunk.
+    Callers that already have section structure should chunk the section
+    body and prepend the section heading to each piece.
     """
-    text = " ".join(text.split())
+    if not text or not text.strip():
+        return []
     step = size - overlap
-    return [text[i:i + size] for i in range(0, len(text), step) if text[i:i + size].strip()]
+    pieces = []
+    for i in range(0, len(text), step):
+        pieces.append(text[i:i + size].strip())
+    return [piece for piece in pieces if piece.strip()]
 
 
 def build_index(pages: list[dict], reset: bool = True):
     texts, metas = [], []
     for page in pages:
-        for i, piece in enumerate(chunk(page["text"])):
-            texts.append(piece)
-            metas.append({
-                "url":      page["url"],
-                "title":    page.get("title", ""),
-                "position": i,
-                "kind":     "text",
-                # TODO add "year" and "page_type" here. Level 4 needs them.
-            })
+        for section in page.get("sections", []):
+            heading = (section.get("heading") or "").strip()
+            body = section.get("text") or ""
+            pieces = chunk(body) if body.strip() else ([] if not heading else [""])
+            # Heading-only section: still index the heading as a chunk.
+            if not pieces and heading:
+                pieces = [""]
+            # TODO: Try to store nested headings as h1->h2(?)
+            for i, piece in enumerate(pieces):
+                labeled = f"{heading}\n{piece}".strip() if heading else piece
+                if not labeled:
+                    continue
+                texts.append(labeled)
+                metas.append({
+                    "url":      page["url"],
+                    "title":    page.get("title", ""),
+                    "section":  heading,
+                    "position": i,
+                    "kind":     "text",
+                    # TODO add "year" and "page_type" here. Level 4 needs them.
+                })
     store = get_store(reset=reset)
     add_to_store(store, texts, metas)
     print(f"indexed {len(texts)} chunks")

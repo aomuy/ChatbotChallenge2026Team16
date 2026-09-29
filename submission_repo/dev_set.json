@@ -44,5 +44,6 @@
   "level": 5,
   "question": "On the wall at the back of the brainstorming area, there are three words. HKU, Engineering, and...?",
   "answer": "Innovation"
- }
+ },
+ {"command": "python main.py \"What is 3D printing also known as?\" \"What does FDM stand for in 3D printing?\" \"Which faculty would you expect an engineering innovation centreto belong to?\" \"When was the deadline for the second round of the Funding Scheme in 2025-26?\" \"Which two materials are banned from the laser cutter?\" \"What were the winning teams in Pitch New Tech Ideas in 2025?\" \"How many 3D printers does the Centre run in total?\" \"How many workshop posters are on the Innovation Academy websites for 2025?\" \"On the wall at the back of the brainstorming area, there are three words. HKU, Engineering, and...?\""}
 ]

@@ -12,7 +12,7 @@
    pip install -r requirements.txt
    ```
 
-1. 所有code會寫在submission_repo裏，所以記得cd submission——repo先把folder切換過去！
+1. 所有code會寫在submission_repo裏，所以記得cd submission_repo先把folder切換過去！
 ```bash
    #如果用venv就先啟動虛擬環境
    source .venv/bin/activate
@@ -33,4 +33,4 @@
    ```
 （2.5）如果你不是用vscode，記得把editor生成的文件放到.gitignore裏面，以免它們被上傳到github（/.vscode 我幫大家加了，所以用vscode應該就沒這個問題）如果你在project裡放了點personal的東西（例如用戶名和密碼）也請提前把相關文件寫在.gitignore裏面！！！
 
-3. 大功告成！
+3. 大功告成！以後記得在各種的branch寫code！！！！！
