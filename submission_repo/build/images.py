@@ -16,14 +16,19 @@ import requests
 from bot.llm import describe_image
 from bot.store import add_to_store, get_store
 
-DESCRIPTION_PROMPT = """
-TODO [W2 b3] Write this.
+DESCRIPTION_PROMPT = """You are a meticulous spatial and visual analyst preparing image data for a RAG retrieval system.
 
-A caption written for a human ("a room with modern furniture and
-students working") cannot answer "how many tables are in Makerspace A"
-or "what three words are on the wall behind the brainstorming area".
+Your goal is NOT to write a short human caption. Your goal is to extract facts that can answer specific, detailed questions.
 
-What would this prompt have to ask for so that both are answerable?
+Analyze the image and provide a structured, detailed description following these rules:
+
+1. **Count and List Objects**: Count all distinct, countable objects. Specifically look for and count: tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers).
+2. **Transcribe Text**: Read and transcribe ALL visible text exactly as it appears. This includes signs on walls, writing on whiteboards, text on screens, text on stickers or posters (e.g., "ENGINEERING INNOVATION", "NOTICE", "KEEP CLEAN").
+3. **Describe Layout and Spatial Relationships**: Describe where things are in relation to each other. Use terms like: left, right, center, foreground, background, next to, above, below, on the wall. (e.g., "The colorful cubic sofas are in the foreground, with a large blue sign saying 'ENGINEERING INNOVATION' on the wall behind them to the right.")
+4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
+5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
+
+Output your analysis as a structured paragraph or bullet points. Make sure your description is dense with nouns and numbers.
 """
 
 CACHE_PATH = Path("data/descriptions.json")
