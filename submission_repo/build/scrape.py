@@ -41,10 +41,10 @@ def crawl(start_url: str, max_pages: int = 500) -> list[str]:
 
         # TODO find the links on this page and add the internal ones to
         # TODO queue, something like:
-        # for a in BeautifulSoup(html, "html.parser").select("a[href]"):
-        #     link = urljoin(url, a["href"]).split("#")[0]
-        #     if urlparse(link).netloc == domain and link not in seen:
-        #         queue.append(link)
+        for a in BeautifulSoup(html, "html.parser").select("a[href]"):
+            link = urljoin(url, a["href"]).split("#")[0]
+            if urlparse(link).netloc == domain and link not in seen:
+                queue.append(link)
 
     return out
 
