@@ -5,3 +5,6 @@ __pycache__/
 /.vscode
 *.ipynb
 *.html
+*.ipynb
+.DS_Store
+/Labs
