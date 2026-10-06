@@ -10,10 +10,11 @@ unlimited; runtime is 30 seconds.
 """
 import json
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 
-from bot.llm import describe_image
+from build.qwen_describe import describe_image
 from bot.store import add_to_store, get_store
 
 DESCRIPTION_PROMPT = """You are a meticulous spatial and visual analyst preparing image data for a RAG retrieval system.
@@ -27,11 +28,36 @@ Analyze the image and provide a structured, detailed description following these
 3. **Describe Layout and Spatial Relationships**: Describe where things are in relation to each other. Use terms like: left, right, center, foreground, background, next to, above, below, on the wall. (e.g., "The colorful cubic sofas are in the foreground, with a large blue sign saying 'ENGINEERING INNOVATION' on the wall behind them to the right.")
 4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
 5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
+6. **No Repetition**: Do not repeat the description of the alternative text or caption unless they are too vague or not present.
+7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Do not mention the above points if they are not present in the image in order to avoid confusion. Limit your response to 400 words or less.
 
-Output your analysis as a structured paragraph or bullet points. Make sure your description is dense with nouns and numbers.
+alternative text: {alt_text}
+caption: {caption}
+
+Output your analysis as bullet points. Make sure your description is dense with nouns and numbers.
 """
 
 CACHE_PATH = Path("data/descriptions.json")
+
+# Vision API accepts only these raster formats (not SVG/BMP/ICO).
+ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def _url_ext(url: str) -> str:
+    return Path(urlparse(url).path).suffix.lower()
+
+
+def _sniff_ext(data: bytes) -> str | None:
+    """Detect format from magic bytes so MIME matches the file content."""
+    if data[:3] == b"\xff\xd8\xff":
+        return ".jpg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return ".png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return ".gif"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    return None
 
 
 def describe_all(images: list[dict]) -> dict:
@@ -46,10 +72,14 @@ def describe_all(images: list[dict]) -> dict:
         src = im["src"]
         if src in cache:
             continue
+        url_ext = _url_ext(src)
+        if url_ext and url_ext not in ALLOWED_EXTS:
+            print("skip (format):", src[:70])
+            continue
         try:
             tmp = Path("data/_tmp_image")
             tmp.write_bytes(requests.get(src, timeout=30).content)
-            cache[src] = describe_image(str(tmp), DESCRIPTION_PROMPT)
+            cache[src] = describe_image(str(tmp), DESCRIPTION_PROMPT.format(alt_text=im.get("alt", ""), caption=im.get("caption", "")))
         except Exception as exc:
             print("failed:", src[:70], exc)
 
@@ -58,7 +88,7 @@ def describe_all(images: list[dict]) -> dict:
     print(f"{len(cache)} descriptions cached")
     return cache
 
-
+# Reuse chunking function from index.py?
 def index_descriptions(descriptions: dict, images: list[dict]) -> None:
     """Add descriptions to the same store as the scraped text."""
     by_src = {im["src"]: im for im in images}
