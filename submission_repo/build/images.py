@@ -8,6 +8,7 @@ data/chroma.
 Never describe an image while answering a question. Ingestion time is
 unlimited; runtime is 30 seconds.
 """
+import argparse
 import json
 from pathlib import Path
 from urllib.parse import urlparse
@@ -60,15 +61,23 @@ def _sniff_ext(data: bytes) -> str | None:
     return None
 
 
-def describe_all(images: list[dict]) -> dict:
+def describe_all(images: list[dict], limit: int | None = None) -> dict:
     """Describe every image once, cache the result, never regenerate.
 
     Ingestion is free, but not if you redo it every time you change a
     line downstream. Key the cache by image URL.
+
+    If limit is set, generate at most that many new descriptions this run.
+    Already-cached images, format skips, and failures do not count.
     """
     cache = json.loads(CACHE_PATH.read_text()) if CACHE_PATH.exists() else {}
+    # Drop blank entries left by older runs so they can be retried.
+    cache = {k: v for k, v in cache.items() if (v or "").strip()}
+    new_count = 0
 
     for im in images:
+        if limit is not None and new_count >= limit:
+            break
         src = im["src"]
         if src in cache:
             continue
@@ -77,15 +86,29 @@ def describe_all(images: list[dict]) -> dict:
             print("skip (format):", src[:70])
             continue
         try:
-            tmp = Path("data/_tmp_image")
-            tmp.write_bytes(requests.get(src, timeout=30).content)
-            cache[src] = describe_image(str(tmp), DESCRIPTION_PROMPT.format(alt_text=im.get("alt", ""), caption=im.get("caption", "")))
+            raw = requests.get(src, timeout=30).content
+            sniff = _sniff_ext(raw)
+            ext = sniff or (url_ext if url_ext in ALLOWED_EXTS else ".jpg")
+            tmp = Path(f"data/_tmp_image{ext}")
+            tmp.write_bytes(raw)
+            desc = describe_image(
+                str(tmp),
+                DESCRIPTION_PROMPT.format(
+                    alt_text=im.get("alt", ""),
+                    caption=im.get("caption", ""),
+                ),
+            )
+            if not (desc or "").strip():
+                print("empty description:", src[:70])
+                continue
+            cache[src] = desc
+            new_count += 1
         except Exception as exc:
             print("failed:", src[:70], exc)
 
     CACHE_PATH.parent.mkdir(exist_ok=True)
     CACHE_PATH.write_text(json.dumps(cache, indent=1))
-    print(f"{len(cache)} descriptions cached")
+    print(f"{len(cache)} descriptions cached ({new_count} new)")
     return cache
 
 # Reuse chunking function from index.py?
@@ -97,14 +120,28 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
         im = by_src.get(src, {})
         # Alt text and captions are already text and cost nothing to index.
         full = " ".join(filter(None, [im.get("alt"), im.get("caption"), text]))
+        # Azure embeddings reject empty strings (400 BadRequest).
+        if not full.strip():
+            continue
         texts.append(full)
         metas.append({"url": im.get("page", src), "image": src, "kind": "image"})
+    if not texts:
+        print("indexed 0 image descriptions (nothing non-empty to index)")
+        return
     store = get_store(reset=False)
     add_to_store(store, texts, metas, ids=[f"img_{i}" for i in range(len(texts))])
     print(f"indexed {len(texts)} image descriptions")
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Describe and index scraped images")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Max new descriptions to generate this run (default: all)",
+    )
+    args = parser.parse_args()
     images = json.loads(Path("data/images.json").read_text())
-    descriptions = describe_all(images)
+    descriptions = describe_all(images, limit=args.limit)
     index_descriptions(descriptions, images)

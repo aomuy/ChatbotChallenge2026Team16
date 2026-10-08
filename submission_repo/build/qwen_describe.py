@@ -44,7 +44,7 @@ def describe_image(image_path: str, prompt: str) -> str:
     b64 = base64.b64encode(path.read_bytes()).decode()
     r = _qwen_client().chat.completions.create(
         model=QWEN_VISION_MODEL,
-        max_completion_tokens=1000,
+        max_completion_tokens=9000,
         messages=[{"role": "user", "content": [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
