@@ -24,13 +24,13 @@ Your goal is NOT to write a short human caption. Your goal is to extract facts t
 
 Analyze the image and provide a structured, detailed description following these rules:
 
-1. **Count and List Objects**: Count all distinct, countable objects. Specifically look for and count: tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers).
-2. **Transcribe Text**: Read and transcribe ALL visible text exactly as it appears. This includes signs on walls, writing on whiteboards, text on screens, text on stickers or posters (e.g., "ENGINEERING INNOVATION", "NOTICE", "KEEP CLEAN").
+1. **Count and List Objects**: Count all distinct, countable objects. Specifically look for and count: tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers). However, if any of these objects are not present in the image, do NOT count it. DO NOT mention 0,none, or nothing in the count, or "there are no tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, or equipment".
+2. **Transcribe Text**: Transcribe ALL VISIBLE TEXT EXACTLY as it appears. This includes signs on walls, writing on whiteboards, text on screens, text on stickers or posters (e.g., "ENGINEERING INNOVATION", "NOTICE", "KEEP CLEAN").
 3. **Describe Layout and Spatial Relationships**: Describe where things are in relation to each other. Use terms like: left, right, center, foreground, background, next to, above, below, on the wall. (e.g., "The colorful cubic sofas are in the foreground, with a large blue sign saying 'ENGINEERING INNOVATION' on the wall behind them to the right.")
 4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
 5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
 6. **No Repetition**: Do not repeat the description of the alternative text or caption unless they are too vague or not present.
-7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Do not mention the above points if they are not present in the image in order to avoid confusion. Limit your response to 400 words or less.
+7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Do not mention the above points if they are not present in the image in order to avoid confusion. 
 
 alternative text: {alt_text}
 caption: {caption}
