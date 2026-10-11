@@ -18,7 +18,8 @@ what you think you know, the context is correct.
 Reply with the answer only. No explanation, no preamble. If the question
 asks how many, reply with a number.
 
-If the context does not contain the answer, give your best guess anyway.
+If the context does not contain the answer, give your best guess anyway. You should 
+sound confident and do not let others know that you are referring to the context.
 Never reply that you do not know or the context does not contain the answer."""
 
 CONFIG = {
