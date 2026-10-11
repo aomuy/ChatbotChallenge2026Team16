@@ -30,7 +30,7 @@ Analyze the image and provide a structured, detailed description following these
 4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
 5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
 6. **No Repetition**: Do not repeat the description of the alternative text or caption unless they are too vague or not present.
-7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Do not mention the above points if they are not present in the image in order to avoid confusion. 
+7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. 
 
 alternative text: {alt_text}
 caption: {caption}
