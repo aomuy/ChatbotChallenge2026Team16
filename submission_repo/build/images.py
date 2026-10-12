@@ -16,17 +16,37 @@ import requests
 from bot.llm import describe_image
 from bot.store import add_to_store, get_store
 
-DESCRIPTION_PROMPT = """
-TODO [W2 b3] Write this.
+IMAGE_TYPES = {"poster", "photo", "diagram", "logo", "other", "unknown"}
 
-A caption written for a human ("a room with modern furniture and
-students working") cannot answer "how many tables are in Makerspace A"
-or "what three words are on the wall behind the brainstorming area".
-
-What would this prompt have to ask for so that both are answerable?
+DESCRIPTION_PROMPT = """Describe this image as JSON only, with these fields:
+{"image_type": "poster|photo|diagram|logo|other|unknown", "description": "..."}.
+Use poster for an actual poster/flyer asset, not a photograph containing
+posters. Use unknown if its type cannot be determined. The description must
+include readable text verbatim, room/location clues, colours, and counts of
+clearly visible objects (tables, chairs, printers, fire extinguishers, etc.).
+Do not invent obscured text or objects. State when a count is uncertain.
 """
 
 CACHE_PATH = Path("data/descriptions.json")
+
+
+def description_fields(value) -> tuple[str, str]:
+    """Accept structured vision output and existing plain-text caches."""
+    if isinstance(value, str):
+        raw = value.strip()
+        if raw.startswith("```") and raw.endswith("```"):
+            raw = "\n".join(raw.splitlines()[1:-1])
+        try:
+            parsed = json.loads(raw)
+        except (ValueError, TypeError):
+            parsed = None
+    else:
+        parsed = value
+    if isinstance(parsed, dict) and isinstance(parsed.get("description"), str):
+        image_type = parsed.get("image_type", "unknown")
+        valid_type = isinstance(image_type, str) and image_type in IMAGE_TYPES
+        return parsed["description"], image_type if valid_type else "unknown"
+    return str(value), "unknown"
 
 
 def describe_all(images: list[dict]) -> dict:
@@ -58,12 +78,23 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
     """Add descriptions to the same store as the scraped text."""
     by_src = {im["src"]: im for im in images}
     texts, metas = [], []
-    for src, text in descriptions.items():
+    for src, description in descriptions.items():
         im = by_src.get(src, {})
+        text, image_type = description_fields(description)
+        # Explicit source annotations override vision classification.
+        image_type = im.get("image_type", image_type)
+        if not isinstance(image_type, str) or image_type not in IMAGE_TYPES:
+            image_type = "unknown"
         # Alt text and captions are already text and cost nothing to index.
         full = " ".join(filter(None, [im.get("alt"), im.get("caption"), text]))
         texts.append(full)
-        metas.append({"url": im.get("page", src), "image": src, "kind": "image"})
+        metas.append({
+            **{key: value for key, value in im.items()
+               if key not in {"src", "alt", "caption", "page"}
+               and isinstance(value, (str, int, float, bool))},
+            "url": im.get("page", src), "image": src, "kind": "image",
+            "image_type": image_type,
+        })
     store = get_store(reset=False)
     add_to_store(store, texts, metas, ids=[f"img_{i}" for i in range(len(texts))])
     print(f"indexed {len(texts)} image descriptions")

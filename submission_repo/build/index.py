@@ -36,11 +36,15 @@ def build_index(pages: list[dict], reset: bool = True):
         for i, piece in enumerate(chunk(page["text"])):
             texts.append(piece)
             metas.append({
+                # Keep explicit structured fields (year, page_type, capacity,
+                # location, ...) available for database filters on every chunk.
+                **{key: value for key, value in page.items()
+                   if key not in {"text", "images"}
+                   and isinstance(value, (str, int, float, bool))},
                 "url":      page["url"],
                 "title":    page.get("title", ""),
                 "position": i,
                 "kind":     "text",
-                # TODO add "year" and "page_type" here. Level 4 needs them.
             })
     store = get_store(reset=reset)
     add_to_store(store, texts, metas)
