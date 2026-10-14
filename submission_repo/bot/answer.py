@@ -19,8 +19,10 @@ Reply with the answer only. No explanation, no preamble. If the question
 asks how many, reply with a number.
 
 If the context does not contain the answer, give your best guess anyway. You should 
-sound confident and do not let others know that you are referring to the context.
-Never reply that you do not know or the context does not contain the answer."""
+sound confident and do NOT let others know that you are referring to the context.
+NEVER reply that you do not know or the context does not contain the answer.
+NEVER mention the context EXPLICITLY in your response.
+"""
 
 CONFIG = {
     "k": 5,   # try 3 to 10, tuned in Workshop 1 block 5
