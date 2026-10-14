@@ -9,6 +9,7 @@ for i, c in enumerate(chunks[:CONFIG["k"]], 1):
     print("url:", m.get("url"))
     print("image:", m.get("image"))       # only for image docs
     print("section:", m.get("section"))   # text chunks
-    print(c["text"][:500], "...\n" if len(c["text"]) > 500 else "\n")
+    print(c["text"])
+    # print(c["text"][:500], "...\n" if len(c["text"]) > 500 else "\n")
 
 print("MODEL:", rag_answer(q))
