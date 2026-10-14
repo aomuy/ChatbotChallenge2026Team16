@@ -4,6 +4,9 @@ Two functions must exist with these exact names and signatures. Every
 other line in this file, and every file under build/, is yours to
 rewrite.
 """
+from concurrent.futures import ThreadPoolExecutor
+
+from bot.counting import COUNT_QUESTION, count_answer
 from bot.llm import chat
 from bot.store import get_store, query
 
@@ -29,7 +32,8 @@ CONFIG = {
 }
 
 
-def retrieve(question: str, k: int = None, where: dict = None) -> list[dict]:
+def retrieve(question: str, k: int = None, where: dict = None,
+             where_document: dict = None) -> list[dict]:
     """Return the k chunks most relevant to the question.
 
     Kept separate from rag_answer on purpose: it lets you check whether
@@ -38,7 +42,8 @@ def retrieve(question: str, k: int = None, where: dict = None) -> list[dict]:
     you rewrite everything else.
     """
     store = get_store()
-    return query(store, question, k=k or CONFIG["k"], where=where)
+    return query(store, question, k=k or CONFIG["k"], where=where,
+                 where_document=where_document)
 
 
 def rag_answer(question: str) -> str:
@@ -47,14 +52,30 @@ def rag_answer(question: str) -> str:
     Runs once per question with a 30 second budget. Anything expensive
     belongs in build/, not here.
     """
+    count = count_answer(question)
+    if count is not None:
+        return count
+
     chunks = retrieve(question, k=10)
     chunks = chunks[:CONFIG["k"]]
+
     context = "\n\n".join(
         f"[{c['metadata'].get('url', '?')}]\n{c['text']}" for c in chunks
     )
 
+    system_prompt = SYSTEM_PROMPT
+    if COUNT_QUESTION.search(question):
+        system_prompt += """
+
+For this count question, the retrieved context is only a partial search
+result. Never treat the number of retrieved chunks, mentions, pages or
+images as the total. Reply with a number only if the context states the
+requested count explicitly or supplies complete evidence for that total.
+If not, reply 'Cannot determine from the indexed data.' instead of guessing.
+This count-specific rule overrides the guessing instruction above."""
+
     reply = chat([
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
     ])
 
@@ -71,13 +92,7 @@ def rag_answer(question: str) -> str:
 
 
 def rag_answer_batch(questions: list[str]) -> list[str]:
-    """Many questions in, the same number of answers out, in order.
-
-    Ships as a loop, which is correct and is all most teams will need.
-    Replace it if you can share work across questions: one embedding
-    call for every query rather than one per query, the store opened
-    once, sub-queries running concurrently.
-
-    Whatever you do, answers[i] must be the answer to questions[i].
-    """
-    return [rag_answer(q) for q in questions]
+    """Many questions in, the same number of answers out, in order."""
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = list(executor.map(rag_answer, questions))
+    return results

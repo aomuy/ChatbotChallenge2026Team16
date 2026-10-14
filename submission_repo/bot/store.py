@@ -67,13 +67,68 @@ def add_to_store(store, texts: list[str], metadatas: list[dict],
         )
 
 
-def query(store, question: str, k: int = 5, where: dict = None) -> list[dict]:
+def query(store, question: str, k: int = 5, where: dict = None,
+          where_document: dict = None) -> list[dict]:
     """Return the k nearest chunks as dicts with text, metadata, distance.
 
     Chroma returns squared L2 distance by default, so lower is closer.
     """
-    r = store.query(query_embeddings=embed([question]), n_results=k, where=where or None)
+    r = store.query(query_embeddings=embed([question]), n_results=k,
+                    where=where or None, where_document=where_document or None)
     return [
         {"text": d, "metadata": m, "distance": dist}
         for d, m, dist in zip(r["documents"][0], r["metadatas"][0], r["distances"][0])
     ]
+
+
+def iter_records(store, where: dict = None, where_document: dict = None,
+                 batch_size: int = 256, include_documents: bool = True):
+    """Read EVERY matching record, without embeddings or a similarity top-k.
+
+    batch_size controls memory per request, not the total number of matches.
+    The collection must not be modified while paging through it.
+    """
+    if batch_size <= 0:
+        raise ValueError("batch_size must be positive")
+    include = ["metadatas", "documents"] if include_documents else ["metadatas"]
+    offset = 0
+    while True:
+        result = store.get(where=where or None, where_document=where_document or None,
+                           limit=batch_size, offset=offset, include=include)
+        ids = result["ids"]
+        for i, record_id in enumerate(ids):
+            yield {
+                "id": record_id,
+                "text": (result["documents"][i] or "") if include_documents else "",
+                "metadata": (result["metadatas"][i] or {}) if result["metadatas"] else {},
+            }
+        if len(ids) < batch_size:
+            break
+        offset += len(ids)
+
+
+def filter_records(store, where: dict = None, where_document: dict = None,
+                   batch_size: int = 256) -> list[dict]:
+    """Return all metadata/content matches. Unlike query(), this has no k limit."""
+    return list(iter_records(store, where, where_document, batch_size))
+
+
+def count_records(store, where: dict = None, where_document: dict = None,
+                  distinct_by: str = None, batch_size: int = 256) -> int:
+    """Count all matches, optionally deduplicating by a metadata field.
+
+    Use distinct_by='image' for image assets, or 'url' for pages rather
+    than overlapping chunks. A missing identity is an error, not a zero.
+    This counts indexed entities, not objects visible inside photographs.
+    """
+    records = iter_records(store, where, where_document, batch_size,
+                           include_documents=False)
+    if distinct_by is None:
+        return sum(1 for _ in records)
+    identities = set()
+    for record in records:
+        identity = record["metadata"].get(distinct_by)
+        if identity is None or identity == "":
+            raise ValueError(f"Record {record['id']} has no {distinct_by!r} identity")
+        identities.add(identity)
+    return len(identities)
