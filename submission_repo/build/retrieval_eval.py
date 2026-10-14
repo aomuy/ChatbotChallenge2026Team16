@@ -1,6 +1,11 @@
 from bot.answer import retrieve, rag_answer, CONFIG
 
 q = "Which two materials are banned from the laser cutter?"
+# q = "What are materials banned from the laser cutter?"
+# q = "What student interest groups are there?"
+# q = "What are the student interest groups?"
+# q = "Is HKU Robocon one of the student interest groups?"
+# q = "Is HKU AI Club one of the student interest groups?"
 chunks = retrieve(q, k=10)   # same fetch size as rag_answer
 
 for i, c in enumerate(chunks[:CONFIG["k"]], 1):
