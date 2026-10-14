@@ -10,6 +10,7 @@ unlimited; runtime is 30 seconds.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -17,6 +18,10 @@ import requests
 
 from build.qwen_describe import describe_image
 from bot.store import add_to_store, get_store
+
+# Filter scalars copied from annotated images.json onto each image record.
+IMAGE_FILTER_FIELDS = ("year", "location", "category", "capacity")
+_FENCED_JSON = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
 
 DESCRIPTION_PROMPT = """You are a meticulous spatial and visual analyst preparing image data for a RAG retrieval system.
 
@@ -42,6 +47,54 @@ CACHE_PATH = Path("data/descriptions.json")
 
 # Vision API accepts only these raster formats (not SVG/BMP/ICO).
 ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+
+def _copy_scalars(source: dict, fields: tuple[str, ...]) -> dict:
+    """Copy present scalar filter fields; omit missing/None/non-scalars."""
+    out = {}
+    for key in fields:
+        if key not in source:
+            continue
+        value = source[key]
+        if value is None or isinstance(value, (dict, list)):
+            continue
+        if isinstance(value, (str, int, float, bool)):
+            out[key] = value
+    return out
+
+
+def description_fields(raw) -> tuple[str, str]:
+    """Parse a cached description into (text, image_type).
+
+    Structured JSON (optionally fenced) yields description + image_type.
+    Legacy plain text and invalid types become image_type \"unknown\".
+    """
+    if isinstance(raw, dict):
+        payload = raw
+    elif isinstance(raw, str):
+        text = raw.strip()
+        payload = None
+        fenced = _FENCED_JSON.search(text)
+        candidate = fenced.group(1).strip() if fenced else text
+        if candidate.startswith("{") or candidate.startswith("["):
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, dict):
+                payload = parsed
+        if payload is None:
+            return (text, "unknown")
+    else:
+        return (str(raw) if raw is not None else "", "unknown")
+
+    description = payload.get("description", "")
+    if not isinstance(description, str):
+        description = str(description) if description is not None else ""
+    image_type = payload.get("image_type")
+    if isinstance(image_type, str) and image_type.strip():
+        return (description, image_type.strip())
+    return (description, "unknown")
 
 
 def _url_ext(url: str) -> str:
@@ -116,15 +169,29 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
     """Add descriptions to the same store as the scraped text."""
     by_src = {im["src"]: im for im in images}
     texts, metas = [], []
-    for src, text in descriptions.items():
+    for src, raw in descriptions.items():
         im = by_src.get(src, {})
+        desc_text, image_type = description_fields(raw)
+        # Explicit annotation on images.json wins over parsed/legacy type.
+        annotated = im.get("image_type")
+        if isinstance(annotated, str) and annotated.strip():
+            image_type = annotated.strip()
+
         # Alt text and captions are already text and cost nothing to index.
-        full = " ".join(filter(None, [im.get("alt"), im.get("caption"), text]))
+        full = " ".join(filter(None, [im.get("alt"), im.get("caption"), desc_text]))
+        
         # Azure embeddings reject empty strings (400 BadRequest).
         if not full.strip():
             continue
         texts.append(full)
-        metas.append({"url": im.get("page", src), "image": src, "kind": "image"})
+        meta = {
+            "url": im.get("page", src),
+            "image": src,
+            "kind": "image",
+            "image_type": image_type,
+        }
+        meta.update(_copy_scalars(im, IMAGE_FILTER_FIELDS))
+        metas.append(meta)
     if not texts:
         print("indexed 0 image descriptions (nothing non-empty to index)")
         return
