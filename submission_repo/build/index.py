@@ -13,6 +13,23 @@ from bot.store import add_to_store, get_store
 
 CHUNK_SIZE, OVERLAP = 800, 100
 
+# Filter scalars copied from annotated pages.json onto every chunk.
+PAGE_FILTER_FIELDS = ("page_type", "year", "capacity", "location", "category")
+
+
+def _copy_scalars(source: dict, fields: tuple[str, ...]) -> dict:
+    """Copy present scalar filter fields; omit missing/None/non-scalars."""
+    out = {}
+    for key in fields:
+        if key not in source:
+            continue
+        value = source[key]
+        if value is None or isinstance(value, (dict, list)):
+            continue
+        if isinstance(value, (str, int, float, bool)):
+            out[key] = value
+    return out
+
 
 def chunk(text: str, size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> list[str]:
     """Fixed-size chunks with overlap.
@@ -49,14 +66,15 @@ def build_index(pages: list[dict], reset: bool = True):
                 if not labeled:
                     continue
                 texts.append(labeled)
-                metas.append({
+                meta = {
                     "url":      page["url"],
                     "title":    page.get("title", ""),
                     "section":  heading,
                     "position": i,
                     "kind":     "text",
-                    # TODO add "year" and "page_type" here. Level 4 needs them.
-                })
+                }
+                meta.update(_copy_scalars(page, PAGE_FILTER_FIELDS))
+                metas.append(meta)
     store = get_store(reset=reset)
     add_to_store(store, texts, metas)
     print(f"indexed {len(texts)} chunks")
