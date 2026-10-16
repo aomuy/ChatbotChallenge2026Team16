@@ -2,6 +2,8 @@
 
 ## 1. https://innowings.engg.hku.hk/wp-content/uploads/2023/08/01.-Design-Build-and-Fly-Team-2023-Poster-723x1024-1.png
 
+**image_type:** `poster`
+
 - **Object counts**: 1 radio-controlled fixed-wing model airplane; 2 landing-gear wheels (black tires, light-gray hubs); 1 two-blade wooden propeller; 3 logos/emblems (top-right rectangular logo box, bottom-left AIAA logotype, bottom-right circular BMFA badge); 1 asphalt runway; 1 green treeline; 1 mountain range; 1 green spherical payload inside the fuselage.
 - **Text transcription (top to bottom)**:
   - Top-right white box: "Tam Wing Fan Innovation Wing" / "FACULTY OF ENGINEERING", green circular emblem left of text.
@@ -26,20 +28,24 @@
   - Fuselage: exposed light-brown wooden truss (balsa/plywood); green sphere mounted mid-fuselage.
   - Propeller: light-brown wood; wheels: black rubber with gray hubs.
   - Runway: dark-gray weathered asphalt with painted yellow, white, and red-orange lines.
-  - Footer band: light-gray concrete-like texture; AIAA logotype dark blue; BMFA badge red, blue wirh a blue airplane shape under the words BMFA; top-right emblem green on white.
+  - Footer band: light-gray concrete-like texture; AIAA logotype dark blue; BMFA badge red, blue, and white with a star; top-right emblem green on white.
 
 ## 2. https://innowings.engg.hku.hk/wp-content/uploads/2022/09/Peter-Cobb-Armenia-archaeology-3-scaled.jpg
 
-- **People**: 1 person crouching in center of frame.
+**image_type:** `photo`
+
+- **People**: 1 person crouching in center of frame; partial legs (blue denim, dark shoe) of a 2nd person visible at top edge, above the trench wall.
 - **Equipment**: 1 red-and-black wet/dry shop vacuum (portable, box-shaped) sitting on sandy ground at right; 1 black corrugated suction hose attached to vacuum top, extending left across the crouching person's boots to a handheld nozzle at lower left.
 - **Worn items**: 1 gray wide-brim sun hat with rear neck flap and black mesh vent panel; 2 white knit work gloves with gray coated palms; 2 tan/brown suede lace-up work boots; 1 white long-sleeve button shirt; 1 pair blue denim jeans with dirt stain on right knee.
 - **Stones**: approximately 15 large light-gray/beige limestone blocks and rubble pieces clustered in foreground (bottom left and bottom center); approximately 12 smaller pale stones embedded in a horizontal row within the earthen trench wall in upper right background; scattered small rocks on trench floor at mid-right.
 - **Text**: "CRAFTSMAN" in white italic capital letters on the red side panel of the vacuum (right side); "SIZE:10" printed in black on the cuff of each work glove (visible on both gloves).
 - **Layout**: crouching person occupies center, body angled toward lower left; vacuum positioned to person's left (image right), slightly behind the foreground stone cluster; hose runs diagonally from vacuum (right) through person's left gloved hand at center to right gloved hand holding nozzle over foreground stones at left; vertical cut-earth trench wall spans full width behind person; flat ground surface with sparse green grass tufts above trench wall at top; shadow of person and vacuum cast to the right on sandy floor.
 - **Colors/materials**: beige/tan dry sandy soil and dust throughout; gray fabric hat; white cotton shirt; blue denim; tan suede boots; red plastic vacuum body with black plastic motor housing and handle; black rubber/plastic corrugated hose; pale gray-beige stone blocks; brown compacted earth cross-section in trench wall.
-- **Setting type**: outdoor archaeological-style excavation trench.
+- **Setting type**: outdoor archaeological-style excavation trench; no tables, chairs, stools, laptops, screens, sofas, steps, or storage lockers present.
 
 ## 3. https://innowings.engg.hku.hk/wp-content/uploads/2019/08/HKUR5.jpg
+
+**image_type:** `photo`
 
 - **People (~20 visible)**: 5 wearing white polo shirts with back logo (1 standing at left foreground with glasses, 4 seated in front row); ~3 additional white-shirted persons seated behind; ~4 men in black T-shirts standing mid-ground in front of screen; 2 persons in orange high-visibility vests with gray reflective stripes at mid-ground left; 1 woman with hair bun in black shirt mid-ground left; 1 man seated in wheelchair at right; 1 older man in gray shirt at right; 1 man in gray cap and black T-shirt at right edge.
 - **Benches: 2 rows** of light natural-wood slat benches in foreground (one occupied by the 4 white-shirted men, one empty slat row at bottom edge).
@@ -56,6 +62,8 @@
 - **Colors/materials**: teal/blue carpet floor; light wood bench slats; white printed backdrop vinyl with red, black, and blue graphics; white cotton polos; black T-shirts; orange high-visibility polyester vests; black metal wheelchair; dark step treads with red edges; white tent ceiling with 2 black diagonal support struts at top; red/pink light wash on right portion of backdrop.
 
 ## 4. https://innowings.engg.hku.hk/wp-content/uploads/2022/08/Robocon-2023-5.jpg
+
+**image_type:** `photo`
 
 - **People**: ~45 individuals in a posed group photo; ~35 wear matching purple T-shirts with a small white chest logo; 1 man in a pink polo shirt with a cap and a lanyard/ID badge (center-right); 2 men in black T-shirts (right, one with denim shorts); 1 woman in black (right); 1 person in a gray hoodie (left edge, back turned); 1 person in a brown shirt with a face mask (left); front row of 8 men kneeling/crouching behind the table; 1 woman in the second row makes a two-finger peace sign.
 - **Robots**: 8 distinct robot/robo-machine assemblies on the foreground table, built from aluminum/metal extrusion frames, white and blue plastic brackets, black chassis plates, orange/blue/red wiring, clear plastic bottles and clear plastic cups/wheels, one with a red-and-white striped drum component.
@@ -75,6 +83,8 @@
 
 ## 5. https://innowings.engg.hku.hk/wp-content/uploads/2019/04/InnoWing-Logo.jpg
 
+**image_type:** `logo`
+
 - Image type: flat vector logo/wordmark on a plain off-white (near-white) background; no photographic content.
 - Countable graphic elements: 1 circular shape, 1 isometric cube-style emblem, 2 horizontal rule lines, 3 lines of text.
 - Emblem (left side, upper two-thirds): 1 solid medium-green circle positioned at the top; below and right of it, an isometric cube-like form built from parallel diagonal stripes: pale pink/lilac stripes forming the top and right faces, medium-green stripes forming the left face, dark-green stripes forming the bottom/front face; a white square negative space at the cube's center.
@@ -86,6 +96,8 @@
 - Transcribed text in reading order: "Tam Wing Fan" / "Innovation Wing" / "FACULTY OF ENGINEERING".
 
 ## 6. https://innowings.engg.hku.hk/wp-content/uploads/2020/05/thtamBanner30-1.jpg
+
+**image_type:** `other`
 
 - **Countable graphic elements**: 1 red heart shape; 1 isometric cube/box logo composed of striped parallelogram faces; 2 full-width horizontal black rule lines; 3 text blocks (2-line headline, 1-line footer).
 - **Transcribed text**:
@@ -111,6 +123,8 @@
 
 ## 7. https://innowings.engg.hku.hk/wp-content/uploads/2019/04/cropped-InnoWing-Logo.jpg
 
+**image_type:** `logo`
+
 - **Object counts**: 1 logo emblem (left), 1 solid green circle (top of emblem), 1 isometric cube-like graphic (below circle), 2 horizontal black rule lines (lower section), 3 text lines total.
 - **Text transcription**: Line 1 (bold black sans-serif, upper right): "Tam Wing Fan"; Line 2 (bold black sans-serif, right, below line 1): "Innovation Wing"; Line 3 (thin uppercase sans-serif, bottom center, between two rules): "FACULTY OF ENGINEERING".
 - **Layout**: Green circle sits at top-left, overlapping the upper-left corner of the isometric cube graphic. Cube graphic occupies left third of image. Two-line bold text block ("Tam Wing Fan" / "Innovation Wing") occupies right two-thirds, vertically aligned with the emblem. First horizontal black rule spans full image width below emblem and bold text. "FACULTY OF ENGINEERING" sits below first rule, centered across full width. Second horizontal black rule runs full width beneath it, at bottom edge.
@@ -120,6 +134,8 @@
 
 ## 8. https://innowings.engg.hku.hk/wp-content/uploads/2021/10/IW2-logo.png
 
+**image_type:** `logo`
+
 - **Countable graphic elements**: 1 solid purple circle; 1 isometric cube-form logo emblem composed of striped parallelograms (3 light-lavender stripes on the top face, 3 medium-purple stripes on the left face, 4 dark-purple/maroon stripes on the front-bottom face); 2 thin horizontal black rule lines; 3 lines of text.
 - **Text transcription**: Line 1: "Tam Wing Fan"; Line 2: "Inno Wing Two"; Line 3 (all caps, thin weight): "FACULTY OF ENGINEERING".
 - **Layout and spatial relationships**: The purple circle sits at the upper left, overlapping the top-left corner of the striped cube emblem; the cube emblem occupies the left third of the image. The two-line bold text "Tam Wing Fan / Inno Wing Two" is positioned to the right of the emblem, vertically centered against it. The first horizontal black rule runs full-width below the emblem and the two-line text. The caps line "FACULTY OF ENGINEERING" spans the full width between the first and second horizontal rules; the second rule forms the bottom edge of the composition.
@@ -128,12 +144,16 @@
 
 ## 9. https://innowings.engg.hku.hk/wp-content/uploads/2020/09/outside_day-768x346.jpg
 
+**image_type:** `photo`
+
 - **Counted objects**: 2 lamp posts (white spherical globes on dark brown cylindrical poles); 4 people (3 pedestrians on the left outdoor walkway — one in white top/dark trousers at far left, one in dark clothing beside them, one in white shirt/dark shorts carrying a bag mid-distance — plus 1 dark-clothed figure behind the left glass wall of the pavilion); 1 single-story glass pavilion (Innovation Wing extension); 1 multi-story main building (4+ floors visible) behind it; 1 partial adjacent building at the far-left edge; 1 gray square column supporting the left walkway canopy; 1 set of low steps (≈2 treads) at the right recessed entrance; 3 paper notices taped to glass (1 yellow, 2 white); 1 white rectangular sign/board on the left walkway; 2 linear ceiling light fixtures visible through the pavilion glass; 1 cluster of green trees in the left background.
 - **Transcribed text**: Faint low-contrast white lettering on the frosted-glass clerestory band, center-right, partially legible as "INNOVATION WING"; text on the yellow and white paper notices is illegible at this resolution.
 - **Layout / spatial relationships**: Wide open brick plaza fills the foreground; the center lamp post rises from the middle foreground, the second lamp post stands right of center in the mid-ground. The glass pavilion occupies center-to-right mid-ground, with transparent glass lower walls, a frosted/translucent upper clerestory band, and a large gray metal canopy whose row of translucent skylight panels overhangs the pavilion and slopes down leftward to cover the pedestrian walkway. The covered walkway runs along the pavilion's left side into the background, carrying the pedestrians and the white sign board; trees and overcast white sky appear beyond it at upper left. On the pavilion's right side: a recessed dark entrance opening with the low steps in front of it, a white marble-patterned stone panel to the right of the opening, and a brown-tiled low wall at the far-right edge. The brown-tiled multi-story building with horizontal window bands rises directly behind and above the pavilion canopy.
 - **Colors / materials**: Plaza paved with reddish-brown/terracotta rectangular brick pavers; pavilion of clear glass, gray metal mullions and fascia, white opaque panels, frosted glass clerestory, translucent canopy roof panels; main building clad in brown/reddish-brown mosaic tile with dark window frames; lamp posts of dark brown/maroon metal with white plastic/glass globes; gray painted column; yellow and white paper notices; green foliage left background; white overcast sky.
 
 ## 10. https://innowings.engg.hku.hk/wp-content/uploads/2020/09/outside_night-768x373.jpeg
+
+**image_type:** `photo`
 
 - **Counts**
   - Globe lamp posts: 2 (black poles, spherical warm-yellow luminous heads)
