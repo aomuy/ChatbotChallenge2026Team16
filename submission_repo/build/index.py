@@ -14,7 +14,10 @@ from bot.store import add_to_store, get_store
 CHUNK_SIZE, OVERLAP = 800, 100
 
 # Filter scalars copied from annotated pages.json onto every chunk.
-PAGE_FILTER_FIELDS = ("page_type", "year", "capacity", "location", "category")
+PAGE_FILTER_FIELDS = (
+    "page_type", "year", "capacity", "location", "category",
+    "event_start", "event_end",
+)
 
 
 def _copy_scalars(source: dict, fields: tuple[str, ...]) -> dict:

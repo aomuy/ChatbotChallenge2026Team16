@@ -10,15 +10,34 @@ import re
 
 from chromadb.api.types import validate_where
 
+from bot.event_dates import (
+    DEFAULT_YEAR,
+    distinct_urls,
+    filter_overlapping_records,
+    parse_question_window,
+)
 from bot.llm import chat
-from bot.store import count_records, get_store, iter_records
+from bot.store import count_records, filter_records, get_store, iter_records
 
 COUNT_QUESTION = re.compile(
     r"\b(how many|number of|count|total)\b|多少|數量|数量|總數|总数|"
     r"幾[張张個个幅]|几[張张個个幅]|一共|總共|总共",
     re.IGNORECASE,
 )
-FILTER_FIELDS = {"image_type", "page_type", "year", "location", "category", "capacity", "url"}
+FILTER_FIELDS = {
+    "image_type", "page_type", "year", "location", "category", "capacity", "url",
+    "event_start", "event_end",
+}
+# Event calendar dates are sparse; requiring them on every text row would
+# always fall back. Other filter fields still use the completeness check.
+DATE_FIELDS = {"event_start", "event_end"}
+
+EVENT_COUNT_QUESTION = re.compile(
+    r"\b(how many|number of|count|total)\b.{0,40}\bevents?\b|"
+    r"\bevents?\b.{0,40}\b(how many|number of|count|total)\b|"
+    r"多少.{0,10}活動|活動.{0,10}多少|幾個活動|几個活动",
+    re.IGNORECASE,
+)
 
 COUNT_PROMPT = """Select a database count plan for the user's question.
 Return JSON only: {"entity":"image" or "page", "where":null or a Chroma
@@ -31,6 +50,11 @@ $eq, $ne, $gt, $gte, $lt, $lte, $in, $nin, $and, $or. Use $and for multiple
 conditions. Python automatically restricts kind and counts distinct image
 URLs or page URLs. Do not add kind to where. Apply ALL constraints in the
 question; return entity:null if any constraint lacks suitable metadata.
+
+For calendar event counts that need a month or date range, prefer entity:null
+so a specialized overlap path can run (do not invent year/month fields).
+You MAY still filter on event_start/event_end with $gte/$lte when the inventory
+shows those ISO date strings and the question gives an explicit absolute range.
 
 Examples (only if the required metadata exists):
 How many poster assets? -> {"entity":"image","where":{"image_type":"poster"}}
@@ -62,6 +86,19 @@ def _fields(where: dict) -> set[str]:
     return fields
 
 
+def _event_date_count(question: str, store) -> str | None:
+    """Count distinct event pages overlapping a parsed date window."""
+    if not EVENT_COUNT_QUESTION.search(question):
+        return None
+    plan = parse_question_window(question, default_year=DEFAULT_YEAR)
+    if plan is None:
+        return None
+    # Chroma cannot $gte/$lte on ISO strings; filter overlap in Python.
+    records = filter_records(store, where={"kind": "text"})
+    matched = distinct_urls(filter_overlapping_records(records, plan))
+    return str(len(matched))
+
+
 def count_answer(question: str, store=None) -> str | None:
     """Return an exact indexed-entity count, or None for normal RAG.
 
@@ -72,6 +109,11 @@ def count_answer(question: str, store=None) -> str | None:
         return None
     if store is None:
         store = get_store()
+
+    event_count = _event_date_count(question, store)
+    if event_count is not None:
+        return event_count
+
     metadata = {"image": [], "page": []}
     for record in iter_records(store, include_documents=False):
         meta = record["metadata"]
@@ -111,11 +153,11 @@ def count_answer(question: str, store=None) -> str | None:
         if not fields <= inventory[entity].keys():
             return None
         identity = "image" if entity == "image" else "url"
-        # Conservatively require complete metadata for this entity kind.
-        # Legacy/partially annotated indexes must not silently undercount.
+        # Conservatively require complete metadata for this entity kind,
+        # except sparse event calendar fields.
+        required = (fields | {identity}) - DATE_FIELDS
         for row in metadata[entity]:
-            if any(row.get(field) in (None, "", "unknown")
-                   for field in fields | {identity}):
+            if any(row.get(field) in (None, "", "unknown") for field in required):
                 return None
         kind_filter = {"kind": "image" if entity == "image" else "text"}
         combined = {"$and": [kind_filter, where]} if where else kind_filter

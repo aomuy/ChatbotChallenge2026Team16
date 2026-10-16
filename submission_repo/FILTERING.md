@@ -36,15 +36,37 @@ apply **before** the similarity result limit.
 to select a metadata filter. Python executes that filter against the full
 collection and returns the deduplicated count directly; the model does not
 compute the number from retrieved text. The planner currently supports
-`image_type`, `page_type`, `year`, `location`, `category`, `capacity`, and `url`
-when those fields exist. Extend `FILTER_FIELDS` in `bot/counting.py` for
-other structured fields.
+`image_type`, `page_type`, `year`, `location`, `category`, `capacity`, `url`,
+`event_start`, and `event_end` when those fields exist. Extend `FILTER_FIELDS`
+in `bot/counting.py` for other structured fields.
+
+Event calendar questions use inclusive ISO intervals on pages:
+
+```python
+from bot.event_dates import (
+    DEFAULT_YEAR, month_window, overlaps, filter_overlapping_records,
+)
+from bot.store import filter_records
+
+# Chroma $gte/$lte only accept numbers, so ISO date overlap is applied in Python.
+records = filter_records(store, where={"kind": "text"})
+plan = {"window_start": "2026-03-01", "window_end": "2026-03-31", "mode": "overlap"}
+march_events = filter_overlapping_records(records, plan)
+```
+
+Multi-day and multi-month events match every overlapping month; a span such as
+August–September still counts each page once (dedupe by `url`). When the
+user omits a year, the bot assumes `DEFAULT_YEAR` (2026). List questions
+(“what events in March?”) use the same overlap filter instead of top‑k
+similarity alone.
 
 Counting image assets or pages differs from counting objects inside photos
 or quantities stated in text. Those questions use the existing RAG path.
 For count questions, its prompt explicitly forbids treating partial search
 results as a total or guessing without sufficient evidence. Unsupported or
-malformed filter plans also fall back to that path.
+malformed filter plans also fall back to that path. `event_start` /
+`event_end` are exempt from the “every row must have this field” completeness
+check because most pages are not dated events.
 
 ## Metadata and rebuilding
 
@@ -78,9 +100,23 @@ explicitly to the source JSON; the scraper does not infer them. Use
 consistent types, such as an integer year for every record. Each page URL
 must represent one entity for page counts such as the number of venues.
 
+Event dates are produced by an offline enrichment step that cross-checks
+three sources (parsed `Date:` / `Dates:` text, HTML structured data from a
+re-fetch, and an LLM extract). Agreed intervals are written as `event_start`
+and `event_end` (ISO `YYYY-MM-DD`, inclusive; single-day ⇒ equal). Derived
+`year` / `month` fields are not written. Conflicts prefer the text parse and
+are logged to `data/date_review.jsonl` together with hubs and single-source
+hits. Pages where no source found a date go to `data/date_missing.jsonl`.
+Images inherit `event_start` / `event_end` from their parent page URL.
+
+```bash
+python -m build.enrich_dates
+```
+
 After updating source metadata, rebuild from `submission_repo`:
 
 ```bash
+python -m build.enrich_dates
 python -m build.index
 python -m build.images
 ```

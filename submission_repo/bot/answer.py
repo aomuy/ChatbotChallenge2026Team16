@@ -7,8 +7,15 @@ rewrite.
 from concurrent.futures import ThreadPoolExecutor
 
 from bot.counting import COUNT_QUESTION, count_answer
+from bot.event_dates import (
+    DEFAULT_YEAR,
+    EVENT_LIST_QUESTION,
+    distinct_urls,
+    filter_overlapping_records,
+    parse_question_window,
+)
 from bot.llm import chat
-from bot.store import get_store, query
+from bot.store import filter_records, get_store, query
 
 # --------------------------------------------------------------------
 # The prompt. Workshop 1 block 2 covers what each part is doing.
@@ -25,6 +32,15 @@ If the context does not contain the answer, give your best guess anyway. You sho
 sound confident and do NOT let others know that you are referring to the context.
 NEVER reply that you do not know or the context does not contain the answer.
 NEVER mention the context EXPLICITLY in your response.
+"""
+
+EVENT_LIST_PROMPT = """You list events held at the Tam Wing Fan Innovation Wing.
+
+Answer only from the context below. Each block is one indexed page.
+List the events that fall in the asked period. Use event names/titles from
+the context. If the context has no matching events, reply exactly:
+No matching events found in the indexed data.
+Reply with the list only — no preamble.
 """
 
 CONFIG = {
@@ -46,6 +62,38 @@ def retrieve(question: str, k: int = None, where: dict = None,
                  where_document=where_document)
 
 
+def _event_list_answer(question: str, store=None) -> str | None:
+    """Answer calendar list questions via overlap filter, not top-k RAG."""
+    if COUNT_QUESTION.search(question):
+        return None
+    if not EVENT_LIST_QUESTION.search(question):
+        return None
+    plan = parse_question_window(question, default_year=DEFAULT_YEAR)
+    if plan is None:
+        return None
+    if store is None:
+        store = get_store()
+    records = filter_records(store, where={"kind": "text"})
+    matched = distinct_urls(filter_overlapping_records(records, plan))
+    if not matched:
+        return "No matching events found in the indexed data."
+
+    blocks = []
+    for record in matched:
+        meta = record.get("metadata") or {}
+        url = meta.get("url", "?")
+        title = meta.get("title") or ""
+        start = meta.get("event_start", "")
+        end = meta.get("event_end", "")
+        text = (record.get("text") or "")[:800]
+        blocks.append(f"[{url}] {title} ({start}..{end})\n{text}")
+    context = "\n\n".join(blocks)
+    return chat([
+        {"role": "system", "content": EVENT_LIST_PROMPT},
+        {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
+    ]).strip()
+
+
 def rag_answer(question: str) -> str:
     """One question in, one answer out.
 
@@ -55,6 +103,10 @@ def rag_answer(question: str) -> str:
     count = count_answer(question)
     if count is not None:
         return count
+
+    listed = _event_list_answer(question)
+    if listed is not None:
+        return listed
 
     chunks = retrieve(question, k=10)
     chunks = chunks[:CONFIG["k"]]

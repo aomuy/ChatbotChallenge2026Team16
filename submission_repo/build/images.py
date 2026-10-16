@@ -20,7 +20,9 @@ from build.qwen_describe import describe_image
 from bot.store import add_to_store, get_store
 
 # Filter scalars copied from annotated images.json onto each image record.
-IMAGE_FILTER_FIELDS = ("year", "location", "category", "capacity")
+IMAGE_FILTER_FIELDS = (
+    "year", "location", "category", "capacity", "event_start", "event_end",
+)
 _FENCED_JSON = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
 
 IMAGE_TYPES = ("poster", "photo", "diagram", "logo", "map", "signage", "other", "unknown")
