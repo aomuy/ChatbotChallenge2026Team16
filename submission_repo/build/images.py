@@ -11,12 +11,13 @@ unlimited; runtime is 30 seconds.
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
 
-from build.qwen_describe import describe_image
+from build.qwen_describe import VisionModelsExhausted, describe_image
 from bot.store import add_to_store, get_store
 
 # Filter scalars copied from annotated images.json onto each image record.
@@ -149,6 +150,12 @@ def _sniff_ext(data: bytes) -> str | None:
     return None
 
 
+def _save_cache(cache: dict) -> None:
+    """Flush the description cache to disk."""
+    CACHE_PATH.parent.mkdir(exist_ok=True)
+    CACHE_PATH.write_text(json.dumps(cache, indent=1, ensure_ascii=False))
+
+
 def describe_all(images: list[dict], limit: int | None = None) -> dict:
     """Describe every image once, cache the result, never regenerate.
 
@@ -157,46 +164,65 @@ def describe_all(images: list[dict], limit: int | None = None) -> dict:
 
     If limit is set, generate at most that many new descriptions this run.
     Already-cached images, format skips, and failures do not count.
+
+    Writes data/descriptions.json after every successful new description.
+    On VisionModelsExhausted or KeyboardInterrupt, flushes then re-raises.
     """
     cache = json.loads(CACHE_PATH.read_text()) if CACHE_PATH.exists() else {}
     # Drop blank entries left by older runs so they can be retried.
     cache = {k: v for k, v in cache.items() if (v or "").strip()}
     new_count = 0
 
-    for im in images:
-        if limit is not None and new_count >= limit:
-            break
-        src = im["src"]
-        if src in cache:
-            continue
-        url_ext = _url_ext(src)
-        if url_ext and url_ext not in ALLOWED_EXTS:
-            print("skip (format):", src[:70])
-            continue
-        try:
-            raw = requests.get(src, timeout=30).content
-            sniff = _sniff_ext(raw)
-            ext = sniff or (url_ext if url_ext in ALLOWED_EXTS else ".jpg")
-            tmp = Path(f"data/_tmp_image{ext}")
-            tmp.write_bytes(raw)
-            desc = describe_image(
-                str(tmp),
-                DESCRIPTION_PROMPT.format(
-                    alt_text=im.get("alt", ""),
-                    caption=im.get("caption", ""),
-                ),
-            )
-            structured = _structured_cache_value(desc or "")
-            if not structured:
-                print("unstructured or empty reply:", src[:70])
+    try:
+        for im in images:
+            if limit is not None and new_count >= limit:
+                break
+            src = im["src"]
+            if src in cache:
                 continue
-            cache[src] = structured
-            new_count += 1
-        except Exception as exc:
-            print("failed:", src[:70], exc)
+            url_ext = _url_ext(src)
+            if url_ext and url_ext not in ALLOWED_EXTS:
+                print("skip (format):", src[:70])
+                continue
+            try:
+                raw = requests.get(src, timeout=30).content
+                sniff = _sniff_ext(raw)
+                ext = sniff or (url_ext if url_ext in ALLOWED_EXTS else ".jpg")
+                tmp = Path(f"data/_tmp_image{ext}")
+                tmp.write_bytes(raw)
+                desc = describe_image(
+                    str(tmp),
+                    DESCRIPTION_PROMPT.format(
+                        alt_text=im.get("alt", ""),
+                        caption=im.get("caption", ""),
+                    ),
+                )
+                structured = _structured_cache_value(desc or "")
+                if not structured:
+                    print("unstructured or empty reply:", src[:70])
+                    continue
+                cache[src] = structured
+                new_count += 1
+                _save_cache(cache)
+            except VisionModelsExhausted:
+                raise
+            except Exception as exc:
+                print("failed:", src[:70], exc)
+    except VisionModelsExhausted:
+        _save_cache(cache)
+        print(f"vision models exhausted; saved {len(cache)} descriptions "
+              f"({new_count} new this run)")
+        raise
+    except KeyboardInterrupt:
+        _save_cache(cache)
+        print(f"interrupted; saved {len(cache)} descriptions "
+              f"({new_count} new this run)")
+        raise
+    except Exception:
+        _save_cache(cache)
+        raise
 
-    CACHE_PATH.parent.mkdir(exist_ok=True)
-    CACHE_PATH.write_text(json.dumps(cache, indent=1))
+    _save_cache(cache)
     print(f"{len(cache)} descriptions cached ({new_count} new)")
     return cache
 
@@ -246,5 +272,11 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     images = json.loads(Path("data/images.json").read_text())
-    descriptions = describe_all(images, limit=args.limit)
+    try:
+        descriptions = describe_all(images, limit=args.limit)
+    except VisionModelsExhausted:
+        # Cache already flushed; skip indexing this partial run.
+        sys.exit(0)
+    except KeyboardInterrupt:
+        sys.exit(130)
     index_descriptions(descriptions, images)

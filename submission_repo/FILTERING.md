@@ -135,10 +135,17 @@ python -m build.index
 python -m build.images
 ```
 
-The first command resets the text/image index; the second repopulates image
-records using cached descriptions where available. Both require the
-embedding API. Running the image command alone on an existing index does
-not update previously added IDs, so use the full rebuild sequence above.
+`python -m build.index` resets the text/image index; `python -m build.images`
+describes new images (cached in `data/descriptions.json`) then indexes them.
+Both require API access. Running the image command alone on an existing index
+does not update previously added IDs, so use the full rebuild sequence above.
+
+Image vision calls use `QWEN_AVAILABLE_VISION_MODELS` left to right (same
+quota failover idea as date models). Each successful new description is
+flushed to `descriptions.json` immediately. On Ctrl-C or when every vision
+model is out of quota, the cache is saved and the process exits **without**
+indexing that partial run; re-run `python -m build.images` later to continue
+describing and, once the describe pass completes normally, to index.
 
 Automatic counts conservatively require all records of the selected kind
 (`image` or `text`) to have the identity and filter fields. Missing fields
