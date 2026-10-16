@@ -23,11 +23,13 @@ from bot.store import add_to_store, get_store
 IMAGE_FILTER_FIELDS = ("year", "location", "category", "capacity")
 _FENCED_JSON = re.compile(r"```(?:json)?\s*([\s\S]*?)\s*```", re.IGNORECASE)
 
+IMAGE_TYPES = ("poster", "photo", "diagram", "logo", "map", "signage", "other", "unknown")
+
 DESCRIPTION_PROMPT = """You are a meticulous spatial and visual analyst preparing image data for a RAG retrieval system.
 
 Your goal is NOT to write a short human caption. Your goal is to extract facts that can answer specific, detailed questions.
 
-Analyze the image and provide a structured, detailed description following these rules:
+Analyze the image and write the description field following these rules:
 
 1. **Count and List Objects**: Count all distinct, countable objects. Specifically look for and count: tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers). However, if any of these objects are not present in the image, do NOT count it. DO NOT mention 0,none, or nothing in the count, or "there are no tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, or equipment".
 2. **Transcribe Text**: Transcribe ALL VISIBLE TEXT EXACTLY as it appears. This includes signs on walls, writing on whiteboards, text on screens, text on stickers or posters (e.g., "ENGINEERING INNOVATION", "NOTICE", "Keep Clean").
@@ -35,12 +37,18 @@ Analyze the image and provide a structured, detailed description following these
 4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
 5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
 6. **No Repetition**: Do not repeat the description of the alternative text or caption unless they are too vague or not present.
-7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. 
+7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Put the analysis in the description field as dense prose or bullet points with nouns and numbers.
+
+Also classify the image asset itself in image_type. Allowed values only:
+poster, photo, diagram, logo, other, unknown.
+A photo that happens to show posters is "photo", not "poster". "poster" means the indexed asset is a poster graphic. Use "unknown" only if you cannot tell.
 
 alternative text: {alt_text}
 caption: {caption}
 
-Output your analysis as bullet points. Make sure your description is dense with nouns and numbers.
+Respond with a single JSON object only, no markdown fences, no other text:
+{{"description":"<your analysis>","image_type":"<one of: poster|photo|diagram|logo|map|signage|other|unknown>"}}
+Make sure your description is written as bullet points and is dense with nouns and numbers.
 """
 
 CACHE_PATH = Path("data/descriptions.json")
@@ -92,9 +100,31 @@ def description_fields(raw) -> tuple[str, str]:
     if not isinstance(description, str):
         description = str(description) if description is not None else ""
     image_type = payload.get("image_type")
-    if isinstance(image_type, str) and image_type.strip():
-        return (description, image_type.strip())
+    if isinstance(image_type, str) and image_type.strip().lower() in IMAGE_TYPES:
+        return (description, image_type.strip().lower())
     return (description, "unknown")
+
+
+def _structured_cache_value(raw: str) -> str | None:
+    """Return canonical JSON for a model reply, or None if not structured."""
+    description, image_type = description_fields(raw)
+    if not description.strip():
+        return None
+    # Reject legacy plain text: structured replies must have carried a type,
+    # or at least have been JSON with a description field.
+    text = (raw or "").strip()
+    fenced = _FENCED_JSON.search(text)
+    candidate = fenced.group(1).strip() if fenced else text
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, dict) or "description" not in parsed:
+        return None
+    return json.dumps(
+        {"description": description, "image_type": image_type},
+        ensure_ascii=False,
+    )
 
 
 def _url_ext(url: str) -> str:
@@ -151,10 +181,11 @@ def describe_all(images: list[dict], limit: int | None = None) -> dict:
                     caption=im.get("caption", ""),
                 ),
             )
-            if not (desc or "").strip():
-                print("empty description:", src[:70])
+            structured = _structured_cache_value(desc or "")
+            if not structured:
+                print("unstructured or empty reply:", src[:70])
                 continue
-            cache[src] = desc
+            cache[src] = structured
             new_count += 1
         except Exception as exc:
             print("failed:", src[:70], exc)
@@ -179,7 +210,7 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
 
         # Alt text and captions are already text and cost nothing to index.
         full = " ".join(filter(None, [im.get("alt"), im.get("caption"), desc_text]))
-        
+
         # Azure embeddings reject empty strings (400 BadRequest).
         if not full.strip():
             continue
