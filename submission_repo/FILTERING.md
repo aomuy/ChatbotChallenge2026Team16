@@ -52,8 +52,9 @@ No production `submission_repo/data/` directory was present when this
 feature was added. Populate the source data before building an index.
 
 The image ingestion prompt now produces a JSON description and an
-`image_type` (`poster`, `photo`, `diagram`, `logo`, `other`, or `unknown`). A
-photo containing posters is classified as `photo`, not as a poster asset.
+`image_type` (`poster`, `photo`, `diagram`, `logo`, `map`, `signage`, `other`,
+or `unknown`). A photo containing posters or signs is classified as `photo`,
+not as a poster or signage asset.
 Explicit `image_type` annotations in `data/images.json` take precedence:
 
 ```json

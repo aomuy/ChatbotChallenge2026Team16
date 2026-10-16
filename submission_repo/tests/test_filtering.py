@@ -159,6 +159,10 @@ class IngestionTests(unittest.TestCase):
                          ("A photo containing posters", "unknown"))
         self.assertEqual(description_fields({"description": "Unclassified", "image_type": []}),
                          ("Unclassified", "unknown"))
+        self.assertEqual(description_fields({"description": "Campus floor plan", "image_type": "map"}),
+                         ("Campus floor plan", "map"))
+        self.assertEqual(description_fields({"description": "Exit wayfinding", "image_type": "signage"}),
+                         ("Exit wayfinding", "signage"))
 
     def test_image_metadata_is_indexed_without_guessing_legacy_type(self):
         images = [{"src": "poster.png", "page": "gallery", "image_type": "poster", "year": 2025}]
@@ -172,8 +176,9 @@ class IngestionTests(unittest.TestCase):
         self.assertEqual(metadata[1]["image"], "photo.png")
 
     def test_page_metadata_is_preserved_for_all_chunks(self):
-        pages = [{"url": "venue/1", "text": "venue details " * 200,
-                  "page_type": "venue", "capacity": 40, "year": 2025, "images": []}]
+        pages = [{"url": "venue/1", "title": "Venue",
+                  "page_type": "venue", "capacity": 40, "year": 2025, "images": [],
+                  "sections": [{"heading": "Details", "text": "venue details " * 200}]}]
         with patch("build.index.get_store"), patch("build.index.add_to_store") as add:
             build_index(pages)
         metadata = add.call_args.args[2]

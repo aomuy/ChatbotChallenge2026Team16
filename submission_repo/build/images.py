@@ -40,8 +40,11 @@ Analyze the image and write the description field following these rules:
 7. **Clear and Concise**: Be clear and concise. Do not use any filler words or phrases. Put the analysis in the description field as dense prose or bullet points with nouns and numbers.
 
 Also classify the image asset itself in image_type. Allowed values only:
-poster, photo, diagram, logo, other, unknown.
-A photo that happens to show posters is "photo", not "poster". "poster" means the indexed asset is a poster graphic. Use "unknown" only if you cannot tell.
+poster, photo, diagram, logo, map, signage, other, unknown.
+A photo that happens to show posters or signs is "photo", not "poster" or "signage".
+"poster" means the indexed asset is a poster graphic. "signage" means a dedicated
+sign/wayfinding graphic (not a photo of a room that contains a sign). "map" means
+a floor plan, site map, or similar schematic. Use "unknown" only if you cannot tell.
 
 alternative text: {alt_text}
 caption: {caption}
