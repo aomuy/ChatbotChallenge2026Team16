@@ -2,28 +2,34 @@
 
 Run after scrape, before index:
 
-    python -m build.enrich_dates
+    python -m build.enrich_dates --limit 5
 
+Resumable: pages with event_start+event_end or event_date_status are skipped.
+Re-process by deleting those fields on the page in pages.json.
 Sources (cross-checked): scraped text Date:/Dates: lines, HTML structured
-data (re-fetch), and an LLM extract. Images inherit dates from parent pages.
+data (re-fetch), and a Qwen date-model extract with quota failover.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import sys
 from datetime import date, datetime
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
 
-from bot.llm import chat
+from build.qwen_chat import DateModelsExhausted, chat_date
 
 PAGES_PATH = Path("data/pages.json")
 IMAGES_PATH = Path("data/images.json")
 REVIEW_PATH = Path("data/date_review.jsonl")
 MISSING_PATH = Path("data/date_missing.jsonl")
+
+# Terminal outcomes without dates — stored so resume does not re-queue forever.
+STATUS_VALUES = frozenset({"hub", "missing", "single_source", "conflict"})
 
 MONTHS = {
     "january": 1, "jan": 1,
@@ -314,14 +320,21 @@ def fetch_html_dates(url: str, timeout: int = 20) -> tuple[str, str] | None:
 
 
 def extract_llm_dates(page: dict) -> dict:
-    """Return {pair, hub} from the chat model."""
+    """Return {pair, hub} from Qwen date models (failover on quota).
+
+    Raises DateModelsExhausted when every configured model is out of tokens.
+    Other API failures yield a null LLM source so text/HTML can still decide.
+    """
     text = _page_text(page, limit=3500)
     try:
-        response = chat([
+        response = chat_date([
             {"role": "system", "content": LLM_PROMPT},
             {"role": "user", "content": text},
         ], max_tokens=256)
-    except Exception:
+    except DateModelsExhausted:
+        raise
+    except Exception as exc:
+        print(f"LLM extract failed for {page.get('url', '?')}: {exc}")
         return {"pair": None, "hub": False, "raw": None}
 
     raw = (response or "").strip()
@@ -347,6 +360,22 @@ def extract_llm_dates(page: dict) -> dict:
     if hub:
         pair = None
     return {"pair": pair, "hub": hub, "raw": data}
+
+
+def is_finished(page: dict) -> bool:
+    """True if this page should be skipped on resume."""
+    if page.get("event_start") and page.get("event_end"):
+        return True
+    status = page.get("event_date_status")
+    return isinstance(status, str) and status in STATUS_VALUES
+
+
+def unfinished_pages(pages: list[dict], limit: int | None = None) -> list[dict]:
+    """Pages still needing enrichment, optionally capped."""
+    work = [p for p in pages if not is_finished(p)]
+    if limit is not None:
+        return work[:limit]
+    return work
 
 
 def resolve_dates(
@@ -447,6 +476,72 @@ def inherit_image_dates(pages: list[dict], images: list[dict]) -> list[dict]:
     return out
 
 
+def apply_decision(page: dict, decision: dict, text_result: dict,
+                   llm_result: dict) -> dict | None:
+    """Mutate page from a resolver decision; return a log row or None."""
+    page.pop("event_start", None)
+    page.pop("event_end", None)
+    page.pop("event_date_status", None)
+
+    row = {
+        "url": page["url"],
+        "title": page.get("title", ""),
+        "reason": decision["reason"],
+        "sources": {
+            k: {"event_start": v[0], "event_end": v[1]} if v else None
+            for k, v in decision["sources"].items()
+        },
+        "text_raw": text_result.get("raw"),
+        "llm_raw": llm_result.get("raw"),
+    }
+
+    if decision["event_start"] and decision["event_end"]:
+        page["event_start"] = decision["event_start"]
+        page["event_end"] = decision["event_end"]
+        # Conflict-with-text-win still has dates; log but no status needed.
+        if decision["log"] == "review":
+            return row
+        return None
+
+    # No dates written — mark terminal status for resume skip.
+    reason = decision["reason"]
+    if reason == "no_dates":
+        page["event_date_status"] = "missing"
+    elif reason in STATUS_VALUES:
+        page["event_date_status"] = reason
+    else:
+        page["event_date_status"] = "missing"
+
+    if decision["log"] in ("review", "missing"):
+        return row
+    return None
+
+
+def enrich_one_page(
+    page: dict,
+    *,
+    html_fetcher=None,
+    llm_extractor=None,
+) -> tuple[dict, dict | None, str | None]:
+    """Enrich a single page in place.
+
+    Returns (page, log_row_or_None, log_kind) where log_kind is
+    'review', 'missing', or None.
+    """
+    if html_fetcher is None:
+        html_fetcher = fetch_html_dates
+    if llm_extractor is None:
+        llm_extractor = extract_llm_dates
+
+    text_result = parse_text_dates(page)
+    html_pair = html_fetcher(page["url"])
+    llm_result = llm_extractor(page)
+    decision = resolve_dates(text_result, html_pair, llm_result)
+    row = apply_decision(page, decision, text_result, llm_result)
+    log_kind = decision.get("log")
+    return page, row, log_kind
+
+
 def enrich_pages(
     pages: list[dict],
     *,
@@ -456,100 +551,111 @@ def enrich_pages(
     """Enrich pages; return (pages, review_rows, missing_rows).
 
     Pass html_fetcher / llm_extractor callables to inject test doubles.
-    Defaults: re-fetch HTML and call the chat LLM.
+    Re-runs every page in the list (caller should pass unfinished only).
     """
-    if html_fetcher is None:
-        html_fetcher = fetch_html_dates
-    if llm_extractor is None:
-        llm_extractor = extract_llm_dates
-
     review_rows: list[dict] = []
     missing_rows: list[dict] = []
     enriched: list[dict] = []
 
     for page in pages:
         page = dict(page)
-        # Drop previous enrichment before re-running.
-        page.pop("event_start", None)
-        page.pop("event_end", None)
-
-        text_result = parse_text_dates(page)
-        html_pair = html_fetcher(page["url"])
-        llm_result = llm_extractor(page)
-
-        decision = resolve_dates(text_result, html_pair, llm_result)
-        row = {
-            "url": page["url"],
-            "title": page.get("title", ""),
-            "reason": decision["reason"],
-            "sources": {
-                k: {"event_start": v[0], "event_end": v[1]} if v else None
-                for k, v in decision["sources"].items()
-            },
-            "text_raw": text_result.get("raw"),
-            "llm_raw": llm_result.get("raw"),
-        }
-        if decision["event_start"] and decision["event_end"]:
-            page["event_start"] = decision["event_start"]
-            page["event_end"] = decision["event_end"]
-        if decision["log"] == "review":
+        page, row, log_kind = enrich_one_page(
+            page, html_fetcher=html_fetcher, llm_extractor=llm_extractor)
+        if row and log_kind == "review":
             review_rows.append(row)
-        elif decision["log"] == "missing":
+        elif row and log_kind == "missing":
             missing_rows.append(row)
         enriched.append(page)
 
     return enriched, review_rows, missing_rows
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(description="Enrich pages/images with event dates")
+def save_checkpoint(
+    pages: list[dict],
+    review_rows: list[dict] | None = None,
+    missing_rows: list[dict] | None = None,
+) -> None:
+    """Write pages.json, inherit image dates, append any new log rows."""
+    PAGES_PATH.parent.mkdir(parents=True, exist_ok=True)
+    PAGES_PATH.write_text(json.dumps(pages, indent=1, ensure_ascii=False))
+    if IMAGES_PATH.exists():
+        images = json.loads(IMAGES_PATH.read_text())
+        images_out = inherit_image_dates(pages, images)
+        IMAGES_PATH.write_text(json.dumps(images_out, indent=1, ensure_ascii=False))
+    for row in review_rows or []:
+        _append_jsonl(REVIEW_PATH, row)
+    for row in missing_rows or []:
+        _append_jsonl(MISSING_PATH, row)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Enrich pages/images with event dates (resumable)")
     parser.add_argument("--skip-html", action="store_true", help="Do not re-fetch HTML")
     parser.add_argument("--skip-llm", action="store_true", help="Do not call the LLM")
-    parser.add_argument("--limit", type=int, default=None, help="Max pages to enrich")
+    parser.add_argument(
+        "--limit", type=int, default=None,
+        help="Max unfinished pages to process this run (skips pages that "
+             "already have event_start+event_end or event_date_status)",
+    )
     args = parser.parse_args(argv)
 
     pages = json.loads(PAGES_PATH.read_text())
+    by_url = {p["url"]: p for p in pages}
+    work = unfinished_pages(pages, limit=args.limit)
+    print(f"unfinished: {len([p for p in pages if not is_finished(p)])}; "
+          f"processing this run: {len(work)}")
+
     html_fetcher = (lambda url: None) if args.skip_html else fetch_html_dates
     llm_extractor = (
         (lambda page: {"pair": None, "hub": False, "raw": None})
         if args.skip_llm else extract_llm_dates
     )
-    work = pages[: args.limit] if args.limit is not None else pages
-    enriched_work, review_rows, missing_rows = enrich_pages(
-        work, html_fetcher=html_fetcher, llm_extractor=llm_extractor)
-    if args.limit is not None:
-        pages_out = enriched_work
-        for p in pages[args.limit:]:
-            p = dict(p)
-            p.pop("event_start", None)
-            p.pop("event_end", None)
-            pages_out.append(p)
-    else:
-        pages_out = enriched_work
 
-    # Reset log files for this run.
-    if REVIEW_PATH.exists():
-        REVIEW_PATH.unlink()
-    if MISSING_PATH.exists():
-        MISSING_PATH.unlink()
-    for row in review_rows:
-        _append_jsonl(REVIEW_PATH, row)
-    for row in missing_rows:
-        _append_jsonl(MISSING_PATH, row)
+    pending_review: list[dict] = []
+    pending_missing: list[dict] = []
+    processed = 0
 
-    PAGES_PATH.write_text(json.dumps(pages_out, indent=1, ensure_ascii=False))
+    def flush() -> None:
+        nonlocal pending_review, pending_missing
+        save_checkpoint(pages, pending_review, pending_missing)
+        pending_review, pending_missing = [], []
 
-    if IMAGES_PATH.exists():
-        images = json.loads(IMAGES_PATH.read_text())
-        images_out = inherit_image_dates(pages_out, images)
-        IMAGES_PATH.write_text(json.dumps(images_out, indent=1, ensure_ascii=False))
-        print(f"updated {len(images_out)} images")
+    try:
+        for page in work:
+            live = by_url[page["url"]]
+            try:
+                _, row, log_kind = enrich_one_page(
+                    live, html_fetcher=html_fetcher, llm_extractor=llm_extractor)
+            except DateModelsExhausted as exc:
+                print(f"stopping: {exc}")
+                flush()
+                dated = sum(1 for p in pages if p.get("event_start"))
+                print(f"checkpoint saved after {processed} pages "
+                      f"({dated} dated total)")
+                return 0
+            if row and log_kind == "review":
+                pending_review.append(row)
+            elif row and log_kind == "missing":
+                pending_missing.append(row)
+            processed += 1
+            flush()
+            print(f"[{processed}/{len(work)}] {live['url']}")
+    except KeyboardInterrupt:
+        print("interrupted; saving checkpoint")
+        flush()
+        return 130
+    except Exception as exc:
+        print(f"fatal error after {processed} pages: {exc}")
+        flush()
+        raise
 
-    dated = sum(1 for p in pages_out if p.get("event_start"))
-    print(f"pages with dates: {dated}/{len(pages_out)}")
-    print(f"review: {len(review_rows)} -> {REVIEW_PATH}")
-    print(f"missing: {len(missing_rows)} -> {MISSING_PATH}")
+    dated = sum(1 for p in pages if p.get("event_start"))
+    print(f"done: processed {processed}; pages with dates: {dated}/{len(pages)}")
+    print(f"review log: {REVIEW_PATH}")
+    print(f"missing log: {MISSING_PATH}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

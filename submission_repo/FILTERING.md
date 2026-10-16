@@ -102,15 +102,29 @@ must represent one entity for page counts such as the number of venues.
 
 Event dates are produced by an offline enrichment step that cross-checks
 three sources (parsed `Date:` / `Dates:` text, HTML structured data from a
-re-fetch, and an LLM extract). Agreed intervals are written as `event_start`
-and `event_end` (ISO `YYYY-MM-DD`, inclusive; single-day ⇒ equal). Derived
-`year` / `month` fields are not written. Conflicts prefer the text parse and
-are logged to `data/date_review.jsonl` together with hubs and single-source
-hits. Pages where no source found a date go to `data/date_missing.jsonl`.
-Images inherit `event_start` / `event_end` from their parent page URL.
+re-fetch, and a Qwen date-model extract). Agreed intervals are written as
+`event_start` and `event_end` (ISO `YYYY-MM-DD`, inclusive; single-day ⇒
+equal). Derived `year` / `month` fields are not written. Conflicts prefer
+the text parse and are logged to `data/date_review.jsonl` together with hubs
+and single-source hits. Pages where no source found a date go to
+`data/date_missing.jsonl`. Images inherit `event_start` / `event_end` from
+their parent page URL.
+
+The enricher is **resumable**. Pages that already have `event_start`+
+`event_end`, or an `event_date_status` (`hub` / `missing` / `single_source` /
+`conflict`), are skipped. `--limit N` processes at most **N unfinished**
+pages this run. To force a page to run again, delete `event_start`,
+`event_end`, and `event_date_status` on that object in `pages.json`. On
+Ctrl-C or when every Qwen date model is out of quota, the current
+`pages.json` (and image inheritance) is saved and review/missing lines for
+finished pages are appended (prior log lines are kept).
+
+LLM date extraction uses `QWEN_AVAILABLE_DATE_MODELS` (comma-separated,
+left to right). On quota/token exhaustion the next model is tried; if all
+are exhausted the run checkpoints and exits.
 
 ```bash
-python -m build.enrich_dates
+python -m build.enrich_dates --limit 5
 ```
 
 After updating source metadata, rebuild from `submission_repo`:
