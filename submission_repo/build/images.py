@@ -156,6 +156,22 @@ def _save_cache(cache: dict) -> None:
     CACHE_PATH.write_text(json.dumps(cache, indent=1, ensure_ascii=False))
 
 
+def _cache_entry_nonempty(value) -> bool:
+    """True if a cache value has usable description text.
+
+    Supports legacy plain strings and structured
+    {"description": "...", "image_type": "..."}.
+    """
+    if value is None:
+        return False
+    if isinstance(value, dict):
+        desc = value.get("description", "")
+        return isinstance(desc, str) and bool(desc.strip())
+    if isinstance(value, str):
+        return bool(value.strip())
+    return bool(str(value).strip())
+
+
 def describe_all(images: list[dict], limit: int | None = None) -> dict:
     """Describe every image once, cache the result, never regenerate.
 
@@ -170,7 +186,7 @@ def describe_all(images: list[dict], limit: int | None = None) -> dict:
     """
     cache = json.loads(CACHE_PATH.read_text()) if CACHE_PATH.exists() else {}
     # Drop blank entries left by older runs so they can be retried.
-    cache = {k: v for k, v in cache.items() if (v or "").strip()}
+    cache = {k: v for k, v in cache.items() if _cache_entry_nonempty(v)}
     new_count = 0
 
     try:
