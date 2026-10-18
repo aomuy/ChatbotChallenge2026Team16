@@ -122,8 +122,8 @@ def description_fields(raw) -> tuple[str, str]:
     return (description, "unknown")
 
 
-def _structured_cache_value(raw: str) -> str | None:
-    """Return canonical JSON for a model reply, or None if not structured."""
+def _structured_cache_value(raw: str) -> dict | None:
+    """Return canonical {description, image_type} for a model reply, or None."""
     description, image_type = description_fields(raw)
     if not description.strip():
         return None
@@ -138,10 +138,7 @@ def _structured_cache_value(raw: str) -> str | None:
         return None
     if not isinstance(parsed, dict) or "description" not in parsed:
         return None
-    return json.dumps(
-        {"description": description, "image_type": image_type},
-        ensure_ascii=False,
-    )
+    return {"description": description, "image_type": image_type}
 
 
 def _url_ext(url: str) -> str:

@@ -145,7 +145,10 @@ class DescribeCheckpointTests(unittest.TestCase):
 
     def test_structured_cache_helper(self):
         raw = json.dumps({"description": "hi", "image_type": "poster"})
-        self.assertIn("poster", _structured_cache_value(raw))
+        self.assertEqual(
+            _structured_cache_value(raw),
+            {"description": "hi", "image_type": "poster"},
+        )
 
 
 if __name__ == "__main__":
