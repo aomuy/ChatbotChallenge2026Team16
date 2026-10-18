@@ -9,6 +9,8 @@ Never describe an image while answering a question. Ingestion time is
 unlimited; runtime is 30 seconds.
 """
 import argparse
+import base64
+import io
 import json
 import re
 import sys
@@ -16,6 +18,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from PIL import Image, UnidentifiedImageError
 
 from build.qwen_describe import VisionModelsExhausted, describe_image
 from bot.store import add_to_store, get_store
@@ -58,9 +61,17 @@ Make sure your description is written as bullet points and is dense with nouns a
 """
 
 CACHE_PATH = Path("data/descriptions.json")
+OVERSIZED_LOG_PATH = Path("data/image_oversized.jsonl")
 
-# Vision API accepts only these raster formats (not SVG/BMP/ICO).
-ALLOWED_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+# Skip formats Pillow cannot rasterize without extra deps.
+SKIP_EXTS = {".svg", ".ico"}
+
+# DashScope rejects data-URI items at 20 MiB; stay strictly under.
+API_DATA_URI_LIMIT = 20 * 1024 * 1024
+MAX_DATA_URI_BYTES = API_DATA_URI_LIMIT - 1024
+MAX_EDGE_PX = 2048
+JPEG_QUALITY_START = 85
+JPEG_QUALITY_MIN = 40
 
 
 def _copy_scalars(source: dict, fields: tuple[str, ...]) -> dict:
@@ -147,6 +158,132 @@ def _sniff_ext(data: bytes) -> str | None:
         return ".gif"
     if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return ".webp"
+    if data[:2] == b"BM":
+        return ".bmp"
+    return None
+
+
+def _mime_for_ext(ext: str) -> str:
+    return {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".jpe": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".bmp": "image/bmp",
+    }.get(ext, "application/octet-stream")
+
+
+def data_uri_nbytes(payload: bytes, mime: str) -> int:
+    """Byte length of a data:{mime};base64,... URI for payload."""
+    b64 = base64.b64encode(payload).decode("ascii")
+    return len(f"data:{mime};base64,{b64}".encode("ascii"))
+
+
+def _log_oversized(src: str, original_bytes: int, data_uri_bytes: int,
+                   note: str = "") -> None:
+    """Append one oversized original to the manual-review log."""
+    OVERSIZED_LOG_PATH.parent.mkdir(exist_ok=True)
+    record = {
+        "src": src,
+        "original_bytes": original_bytes,
+        "estimated_data_uri_bytes": data_uri_bytes,
+        "limit_bytes": MAX_DATA_URI_BYTES,
+        "api_limit_bytes": API_DATA_URI_LIMIT,
+    }
+    if note:
+        record["note"] = note
+    with OVERSIZED_LOG_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+    print(f"oversized (logged): {src[:70]} "
+          f"({data_uri_bytes} data-URI bytes)")
+
+
+def _pil_rgb(img: Image.Image) -> Image.Image:
+    """Flatten to RGB suitable for JPEG (first frame of animated GIFs)."""
+    if getattr(img, "n_frames", 1) > 1:
+        img.seek(0)
+    if img.mode in ("RGB",):
+        return img
+    if img.mode in ("RGBA", "LA") or (
+        img.mode == "P" and "transparency" in img.info
+    ):
+        rgba = img.convert("RGBA")
+        background = Image.new("RGB", rgba.size, (255, 255, 255))
+        background.paste(rgba, mask=rgba.split()[-1])
+        return background
+    return img.convert("RGB")
+
+
+def _encode_jpeg(img: Image.Image, quality: int) -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality, optimize=True)
+    return buf.getvalue()
+
+
+def prepare_vision_image(raw: bytes, src: str = "") -> tuple[bytes, str] | None:
+    """Convert/compress raw image bytes for the vision API.
+
+    - Rasterizes BMP / mislabeled JPEG (.jpe) and other Pillow-readable formats
+      to JPEG.
+    - Skips SVG/ICO (and unreadable bytes).
+    - Resizes and re-encodes so the data-URI stays under MAX_DATA_URI_BYTES.
+    - When the *original* payload would exceed the limit, appends src to
+      data/image_oversized.jsonl for manual review (still attempts compress).
+
+    Returns (jpeg_bytes, \".jpg\") or None if the image cannot be prepared.
+    """
+    url_ext = _url_ext(src) if src else ""
+    sniff = _sniff_ext(raw)
+    if (url_ext in SKIP_EXTS) or (sniff in SKIP_EXTS):
+        return None
+
+    orig_ext = sniff or url_ext or ".bin"
+    orig_mime = _mime_for_ext(orig_ext)
+    orig_uri = data_uri_nbytes(raw, orig_mime if orig_mime != "application/octet-stream"
+                               else "image/jpeg")
+    if orig_uri >= MAX_DATA_URI_BYTES and src:
+        _log_oversized(src, len(raw), orig_uri)
+
+    try:
+        img = Image.open(io.BytesIO(raw))
+        img.load()
+    except (UnidentifiedImageError, OSError) as exc:
+        print(f"skip (unreadable): {src[:70] or '(bytes)'} ({exc})")
+        return None
+
+    rgb = _pil_rgb(img)
+    # Start from a bounded edge; shrink further if still over the URI cap.
+    edge = MAX_EDGE_PX
+    quality = JPEG_QUALITY_START
+    prepared: bytes | None = None
+    for _ in range(24):
+        w, h = rgb.size
+        scale = min(1.0, edge / max(w, h)) if max(w, h) > 0 else 1.0
+        if scale < 1.0:
+            resized = rgb.resize(
+                (max(1, int(w * scale)), max(1, int(h * scale))),
+                Image.Resampling.LANCZOS,
+            )
+        else:
+            resized = rgb
+        prepared = _encode_jpeg(resized, quality)
+        if data_uri_nbytes(prepared, "image/jpeg") < MAX_DATA_URI_BYTES:
+            return prepared, ".jpg"
+        if quality > JPEG_QUALITY_MIN:
+            quality = max(JPEG_QUALITY_MIN, quality - 10)
+        else:
+            edge = max(256, int(edge * 0.75))
+            quality = JPEG_QUALITY_START
+
+    print(f"skip (still oversized after compress): {src[:70] or '(bytes)'}")
+    if src and orig_uri < MAX_DATA_URI_BYTES:
+        # Original was under limit but compress path somehow failed; still log.
+        _log_oversized(
+            src, len(raw), data_uri_nbytes(prepared or b"", "image/jpeg"),
+            note="failed_to_compress_under_limit",
+        )
     return None
 
 
@@ -181,6 +318,10 @@ def describe_all(images: list[dict], limit: int | None = None) -> dict:
     If limit is set, generate at most that many new descriptions this run.
     Already-cached images, format skips, and failures do not count.
 
+    Each download is converted/compressed via prepare_vision_image so the
+    vision data-URI stays under MAX_DATA_URI_BYTES. Originals that would
+    exceed the limit are appended to data/image_oversized.jsonl.
+
     Writes data/descriptions.json after every successful new description.
     On VisionModelsExhausted or KeyboardInterrupt, flushes then re-raises.
     """
@@ -197,15 +338,18 @@ def describe_all(images: list[dict], limit: int | None = None) -> dict:
             if src in cache:
                 continue
             url_ext = _url_ext(src)
-            if url_ext and url_ext not in ALLOWED_EXTS:
+            if url_ext in SKIP_EXTS:
                 print("skip (format):", src[:70])
                 continue
             try:
                 raw = requests.get(src, timeout=30).content
-                sniff = _sniff_ext(raw)
-                ext = sniff or (url_ext if url_ext in ALLOWED_EXTS else ".jpg")
+                prepared = prepare_vision_image(raw, src=src)
+                if prepared is None:
+                    print("skip (prepare):", src[:70])
+                    continue
+                payload, ext = prepared
                 tmp = Path(f"data/_tmp_image{ext}")
-                tmp.write_bytes(raw)
+                tmp.write_bytes(payload)
                 desc = describe_image(
                     str(tmp),
                     DESCRIPTION_PROMPT.format(
@@ -279,12 +423,19 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Describe and index scraped images")
+    parser = argparse.ArgumentParser(
+        description="Describe scraped images (optionally index into Chroma)",
+    )
     parser.add_argument(
         "--limit",
         type=int,
         default=None,
         help="Max new descriptions to generate this run (default: all)",
+    )
+    parser.add_argument(
+        "--index",
+        action="store_true",
+        help="Also index cached descriptions into Chroma (off by default)",
     )
     args = parser.parse_args()
     images = json.loads(Path("data/images.json").read_text())
@@ -295,4 +446,5 @@ if __name__ == "__main__":
         sys.exit(0)
     except KeyboardInterrupt:
         sys.exit(130)
-    index_descriptions(descriptions, images)
+    if args.index:
+        index_descriptions(descriptions, images)

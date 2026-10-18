@@ -29,6 +29,11 @@ _QUOTA_HINTS = re.compile(
     r"exceed|exhausted|balance|credit|429",
     re.IGNORECASE,
 )
+# Payload-size errors contain "exceed" but are not quota; do not burn models.
+_NOT_QUOTA = re.compile(
+    r"data-?uri|max bytes per data|max_bytes|payload.?too.?large",
+    re.IGNORECASE,
+)
 
 _client: OpenAI | None = None
 # Models already known to be out of quota this process; skip on later pages.
@@ -75,6 +80,8 @@ def is_quota_error(exc: BaseException) -> bool:
         if isinstance(err, dict):
             code = str(err.get("code") or err.get("type") or "")
             text = f"{text} {err.get('message', '')} {code}"
+    if _NOT_QUOTA.search(text) or _NOT_QUOTA.search(code):
+        return False
     return bool(_QUOTA_HINTS.search(text) or _QUOTA_HINTS.search(code))
 
 

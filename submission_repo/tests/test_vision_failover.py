@@ -104,6 +104,8 @@ class DescribeCheckpointTests(unittest.TestCase):
                 with patch("build.images.CACHE_PATH", cache_file), \
                      patch("build.images._save_cache", side_effect=track_save), \
                      patch("build.images.requests.get") as get, \
+                     patch("build.images.prepare_vision_image",
+                           return_value=(b"\xff\xd8\xff\xd9", ".jpg")), \
                      patch("build.images.describe_image", return_value=structured):
                     get.return_value = MagicMock(content=b"\xff\xd8\xff\xd9")
                     result = describe_all(images, limit=1)
@@ -130,6 +132,8 @@ class DescribeCheckpointTests(unittest.TestCase):
                 with patch("build.images.CACHE_PATH", cache_file), \
                      patch("build.images._save_cache", side_effect=track_save), \
                      patch("build.images.requests.get") as get, \
+                     patch("build.images.prepare_vision_image",
+                           return_value=(b"\xff\xd8\xff\xd9", ".jpg")), \
                      patch("build.images.describe_image",
                            side_effect=VisionModelsExhausted("done")):
                     get.return_value = MagicMock(content=b"\xff\xd8\xff\xd9")

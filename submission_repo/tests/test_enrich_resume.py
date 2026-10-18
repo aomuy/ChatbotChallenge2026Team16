@@ -96,6 +96,8 @@ class QuotaFailoverTests(unittest.TestCase):
         self.assertTrue(is_quota_error(RuntimeError("Insufficient quota")))
         self.assertTrue(is_quota_error(RuntimeError("AllocationQuota exceeded")))
         self.assertFalse(is_quota_error(RuntimeError("connection reset")))
+        self.assertFalse(is_quota_error(RuntimeError(
+            "Exceeded limit on max bytes per data-uri item : 20971520")))
 
     def test_failover_to_next_model(self):
         models = ["model-a", "model-b"]
