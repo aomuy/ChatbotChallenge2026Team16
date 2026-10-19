@@ -15,6 +15,7 @@ from bot.event_dates import (
     parse_question_window,
 )
 from bot.llm import chat
+from bot.retrieval_filter import retrieval_where
 from bot.store import filter_records, get_store, query
 
 # --------------------------------------------------------------------
@@ -22,16 +23,15 @@ from bot.store import filter_records, get_store, query
 # --------------------------------------------------------------------
 SYSTEM_PROMPT = """You answer questions about the Tam Wing Fan Innovation Wing.
 
-Answer only from the context below. Where the context disagrees with
-what you think you know, the context is correct.
-
 Reply with the answer only. No explanation, no preamble. If the question
 asks how many, reply with a number.
 
-If the context does not contain the answer, give your best guess anyway. You should 
-sound confident and do NOT let others know that you are referring to the context.
+If the context does not contain the answer, you MUST give your best guess anyway. 
+In this case you can guess without ANY evidence from the context and use your own 
+knowledge. You should sound confident and do NOT let others know that you are 
+referring to the context, the index, or the database.
 NEVER reply that you do not know or the context does not contain the answer.
-NEVER mention the context EXPLICITLY in your response.
+NEVER mention the context or the index EXPLICITLY in your response.
 """
 
 EVENT_LIST_PROMPT = """You list events held at the Tam Wing Fan Innovation Wing.
@@ -108,7 +108,8 @@ def rag_answer(question: str) -> str:
     if listed is not None:
         return listed
 
-    chunks = retrieve(question, k=10)
+    where = retrieval_where(question)
+    chunks = retrieve(question, k=10, where=where)
     chunks = chunks[:CONFIG["k"]]
 
     context = "\n\n".join(

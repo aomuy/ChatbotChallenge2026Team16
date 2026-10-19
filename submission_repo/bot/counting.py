@@ -140,7 +140,7 @@ def count_answer(question: str, store=None) -> str | None:
         {"role": "system", "content": COUNT_PROMPT},
         {"role": "user", "content": json.dumps(
             {"inventory": inventory, "question": question}, ensure_ascii=False)},
-    ], max_tokens=384)
+    ], max_completion_tokens=384)
     try:
         plan = json.loads(response)
         if not isinstance(plan, dict) or plan.get("entity") not in inventory:

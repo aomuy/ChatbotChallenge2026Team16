@@ -60,12 +60,12 @@ def _client(url: str) -> AzureOpenAI:
     return _clients[url]
 
 
-def chat(messages: list[dict], model: str = None, temperature: float = 0.0,
-         max_tokens: int = 512) -> str:
+def chat(messages: list[dict], model: str = None, temperature: float = 1.0,
+         max_completion_tokens: int = 512) -> str:
     """One chat completion. Returns the reply text."""
     r = _client(CHAT_URL).chat.completions.create(
         model=model or CHAT_DEPLOYMENT, messages=messages,
-        temperature=temperature, max_tokens=max_tokens,
+        temperature=temperature, max_completion_tokens=max_completion_tokens,
     )
     return r.choices[0].message.content or ""
 
@@ -100,7 +100,7 @@ def describe_image(image_path: str, prompt: str) -> str:
     mime = mimetypes.guess_type(path.name)[0] or "image/jpeg"
     b64 = base64.b64encode(path.read_bytes()).decode()
     r = _client(VISION_URL).chat.completions.create(
-        model=VISION_DEPLOYMENT, max_tokens=800,
+        model=VISION_DEPLOYMENT, max_completion_tokens=800,
         messages=[{"role": "user", "content": [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}},
