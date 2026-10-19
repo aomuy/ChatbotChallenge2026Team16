@@ -1,12 +1,15 @@
 from bot.answer import retrieve, rag_answer, CONFIG
+from bot.retrieval_filter import retrieval_where
 
-q = "Which two materials are banned from the laser cutter?"
-# q = "What are materials banned from the laser cutter?"
-# q = "What student interest groups are there?"
+# q = "Which two materials are banned from the laser cutter?"
+# q = "What materials are banned from the laser cutter?"
+q = "How many student interest groups are there?"   # actually there isn't an official list of student interest groups...
 # q = "What are the student interest groups?"
 # q = "Is HKU Robocon one of the student interest groups?"
 # q = "Is HKU AI Club one of the student interest groups?"
-chunks = retrieve(q, k=10)   # same fetch size as rag_answer
+where = retrieval_where(q)
+print("WHERE:", where)
+chunks = retrieve(q, k=10, where=where)   # same fetch size / filter as rag_answer
 
 for i, c in enumerate(chunks[:CONFIG["k"]], 1):
     m = c["metadata"]

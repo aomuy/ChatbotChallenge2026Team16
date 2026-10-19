@@ -44,7 +44,7 @@ Reply with the list only — no preamble.
 """
 
 CONFIG = {
-    "k": 5,   # try 3 to 10, tuned in Workshop 1 block 5
+    "k": 7,   # try 3 to 10, tuned in Workshop 1 block 5
 }
 
 
@@ -121,11 +121,9 @@ def rag_answer(question: str) -> str:
         system_prompt += """
 
 For this count question, the retrieved context is only a partial search
-result. Never treat the number of retrieved chunks, mentions, pages or
-images as the total. Reply with a number only if the context states the
-requested count explicitly or supplies complete evidence for that total.
-If not, reply 'Cannot determine from the indexed data.' instead of guessing.
-This count-specific rule overrides the guessing instruction above."""
+result. Never treat the number of retrieved chunks as the total. Reply with a number only if the context states the
+requested count explicitly or supplies complete evidence(such as a list of relevant items) for that total.
+If not, make your best guess anyway."""
 
     reply = chat([
         {"role": "system", "content": system_prompt},
