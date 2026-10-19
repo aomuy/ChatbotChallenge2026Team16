@@ -9,7 +9,14 @@ every page and you can skip the crawl entirely.
 """
 import json
 from pathlib import Path
-from urllib.parse import urljoin, urlparse
+from urllib.parse import (
+    parse_qsl,
+    unquote,
+    urlencode,
+    urljoin,
+    urlparse,
+    urlunparse,
+)
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -22,11 +29,119 @@ SITES = [
 
 HEADING_MAX_LEN = 120
 
+# Dropped from query strings; they create clone URLs for the same page.
+_TRACKING_PARAMS = {
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_term",
+    "utm_content",
+    "fbclid",
+    "gclid",
+    "mc_cid",
+    "mc_eid",
+}
+
+# Linked media must not be crawled as HTML pages (pages.json had ~500 of these).
+_SKIP_EXTENSIONS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".svg",
+    ".ico",
+    ".pdf",
+    ".zip",
+    ".css",
+    ".js",
+    ".mp3",
+    ".mp4",
+    ".wav",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+}
+
+
+def normalize_url(url: str) -> str | None:
+    """Canonical form for crawl dedupe, or None if the URL is not a page.
+
+    Handles scheme/host casing, default ports, fragments, tracking query
+    params, percent-decoding, collapsed slashes, trailing slashes on
+    directory paths, and skips obvious non-HTML assets.
+    """
+    if not url:
+        return None
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        return None
+
+    scheme = parsed.scheme.lower()
+    netloc = parsed.netloc.lower()
+    if "@" in netloc:
+        netloc = netloc.rsplit("@", 1)[-1]
+    if scheme == "http" and netloc.endswith(":80"):
+        netloc = netloc[:-3]
+    elif scheme == "https" and netloc.endswith(":443"):
+        netloc = netloc[:-4]
+
+    path = unquote(parsed.path) or "/"
+    while "//" in path:
+        path = path.replace("//", "/")
+    # Broken href text sometimes ends up in the path.
+    if "opens in a new tab" in path.lower():
+        return None
+
+    last = path.rsplit("/", 1)[-1]
+    if "." in last:
+        ext = "." + last.rsplit(".", 1)[-1].lower()
+        if ext in _SKIP_EXTENSIONS:
+            return None
+        # File-like path: no trailing slash.
+    else:
+        # Directory-like path: WordPress canonicals here use a trailing slash.
+        if not path.endswith("/"):
+            path += "/"
+
+    if "/wp-content/uploads/" in path:
+        return None
+
+    query_items = [
+        (k, v)
+        for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+        if k.lower() not in _TRACKING_PARAMS
+    ]
+    query = urlencode(query_items, doseq=True)
+    # Fragment intentionally dropped — same document.
+    return urlunparse((scheme, netloc, path, "", query, ""))
+
+
+def _canonical_href(html: str, base_url: str) -> str | None:
+    soup = BeautifulSoup(html, "html.parser")
+    link = soup.find(
+        "link",
+        rel=lambda value: value
+        and "canonical" in [str(part).lower() for part in (
+            value if isinstance(value, list) else [value]
+        )],
+    )
+    if not link or not link.get("href"):
+        return None
+    return normalize_url(urljoin(base_url, link["href"]))
+
 
 def crawl(start_url: str, max_pages: int = 500) -> list[str]:
     """Return every page URL on the same site as start_url."""
-    seen, queue, out = set(), [start_url], []
-    domain = urlparse(start_url).netloc
+    start = normalize_url(start_url)
+    if not start:
+        return []
+
+    seen, stored, queue, out = set(), set(), [start], []
+    domain = urlparse(start).netloc
 
     while queue and len(out) < max_pages:
         url = queue.pop(0)
@@ -34,17 +149,33 @@ def crawl(start_url: str, max_pages: int = 500) -> list[str]:
             continue
         seen.add(url)
         try:
-            html = requests.get(url, timeout=20).text
+            resp = requests.get(url, timeout=20, allow_redirects=True)
+            resp.raise_for_status()
         except Exception:
             continue
-        out.append(url)
 
-        # TODO find the links on this page and add the internal ones to
-        # TODO queue, something like:
-        # for a in BeautifulSoup(html, "html.parser").select("a[href]"):
-        #     link = urljoin(url, a["href"]).split("#")[0]
-        #     if urlparse(link).netloc == domain and link not in seen:
-        #         queue.append(link)
+        # Prefer redirect target, then <link rel="canonical"> when same-host.
+        # That merges /acrylic vs /acrylic/ and /equipment/ vs /innowing1/equipment/.
+        final = normalize_url(resp.url)
+        if not final or urlparse(final).netloc != domain:
+            continue
+        identity = _canonical_href(resp.text, final) or final
+        if urlparse(identity).netloc != domain:
+            identity = final
+
+        seen.add(final)
+        seen.add(identity)
+        if identity not in stored:
+            stored.add(identity)
+            out.append(identity)
+
+        for a in BeautifulSoup(resp.text, "html.parser").select("a[href]"):
+            href = a.get("href")
+            if not href:
+                continue
+            link = normalize_url(urljoin(final, href))
+            if link and urlparse(link).netloc == domain and link not in seen:
+                queue.append(link)
 
     return out
 
@@ -263,10 +394,22 @@ def extract(html: str, url: str) -> dict:
 
 if __name__ == "__main__":
     pages = []
+    seen_pages: set[str] = set()
     for site in SITES:
         for url in crawl(site):
+            if url in seen_pages:
+                continue
             try:
-                pages.append(extract(requests.get(url, timeout=20).text, url))
+                resp = requests.get(url, timeout=20, allow_redirects=True)
+                resp.raise_for_status()
+                # Re-resolve in case the live site redirects again on the
+                # second fetch; keep one record per normalized identity.
+                final = normalize_url(resp.url) or url
+                identity = _canonical_href(resp.text, final) or final
+                if identity in seen_pages:
+                    continue
+                seen_pages.add(identity)
+                pages.append(extract(resp.text, identity))
             except Exception as exc:
                 print("skipped", url, exc)
 
