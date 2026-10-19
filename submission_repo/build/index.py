@@ -53,10 +53,47 @@ def chunk(text: str, size: int = CHUNK_SIZE, overlap: int = OVERLAP) -> list[str
     return [piece for piece in pieces if piece.strip()]
 
 
+def merge_empty_heading_runs(sections: list[dict]) -> list[dict]:
+    """Collapse consecutive heading-only sections into one denser section.
+
+    First heading stays as the section heading; remaining headings become
+    the body (one per line). Singleton empty headings are unchanged.
+    Sections that already have body text pass through as-is.
+    """
+    out: list[dict] = []
+    i = 0
+    n = len(sections)
+    while i < n:
+        section = sections[i]
+        heading = (section.get("heading") or "").strip()
+        body = (section.get("text") or "").strip()
+        if body:
+            out.append(section)
+            i += 1
+            continue
+
+        # Consume the full run of empty-text sections.
+        j = i + 1
+        while j < n and not (sections[j].get("text") or "").strip():
+            j += 1
+        run = sections[i:j]
+        if len(run) == 1:
+            out.append({"heading": heading, "text": ""})
+        else:
+            rest = [
+                (s.get("heading") or "").strip()
+                for s in run[1:]
+                if (s.get("heading") or "").strip()
+            ]
+            out.append({"heading": heading, "text": "\n".join(rest)})
+        i = j
+    return out
+
+
 def build_index(pages: list[dict], reset: bool = True):
     texts, metas = [], []
     for page in pages:
-        for section in page.get("sections", []):
+        for section in merge_empty_heading_runs(page.get("sections", [])):
             heading = (section.get("heading") or "").strip()
             body = section.get("text") or ""
             pieces = chunk(body) if body.strip() else ([] if not heading else [""])
