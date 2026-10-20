@@ -55,6 +55,25 @@ class RetrievalWhereTests(unittest.TestCase):
             {"kind": "image"},
         )
 
+    def test_makerspace_table_count_routes_to_image(self):
+        self.assertEqual(
+            retrieval_where("How many tables are in Makerspace A?"),
+            {"kind": "image"},
+        )
+
+    def test_brainstorming_wall_routes_to_image(self):
+        self.assertEqual(
+            retrieval_where(
+                "What three words are on the wall behind the brainstorming area?"),
+            {"kind": "image"},
+        )
+
+    def test_chinese_wall_routes_to_image(self):
+        self.assertEqual(
+            retrieval_where("头脑风暴区后方墙上的三个词是什么？"),
+            {"kind": "image"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

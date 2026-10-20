@@ -47,7 +47,7 @@ def check_calls():
     t0 = time.time()
     try:
         chat([{"role": "user", "content": "Reply with one word: connected"}],
-             model=CHAT_DEPLOYMENT, max_tokens=5)
+             model=CHAT_DEPLOYMENT, max_completion_tokens=5)
         print(f"  chat call                PASS   {time.time() - t0:.1f}s")
     except Exception as exc:                        # noqa: BLE001
         print(f"  chat call                FAIL   {type(exc).__name__}: {str(exc)[:100]}")

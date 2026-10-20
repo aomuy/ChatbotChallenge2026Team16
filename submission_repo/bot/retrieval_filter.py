@@ -37,6 +37,19 @@ _TEXT_MODALITY = re.compile(
     re.IGNORECASE,
 )
 
+# Venue / sign questions whose answers live in image descriptions (W2 Lv3/Lv5),
+# even when the user never says "photo" or "poster".
+_PLACE_VISUAL = re.compile(
+    r"\bmakerspace\b|"
+    r"\bbrainstorming\b|"
+    r"\bgallery\b|"
+    r"\bwhiteboard\b|"
+    r"\b(on the wall|behind the (wall|seating|brainstorming)|wall behind)\b|"
+    r"\bthree words\b|"
+    r"墙上|墙后|头脑风暴|白板上|走廊 gallery|办公室外",
+    re.IGNORECASE,
+)
+
 
 def _matched_image_types(question: str) -> list[str]:
     """Return unique image_type values whose cues appear, in cue-table order."""
@@ -54,6 +67,7 @@ def retrieval_where(question: str) -> dict | None:
 
     types = _matched_image_types(question)
     image_cue = bool(types) or bool(_IMAGE_MODALITY.search(question))
+    place_visual = bool(_PLACE_VISUAL.search(question))
     text_cue = bool(_TEXT_MODALITY.search(question))
 
     if image_cue:
@@ -64,6 +78,9 @@ def retrieval_where(question: str) -> dict | None:
                 {"kind": "image"},
                 {"image_type": {"$in": types}},
             ]}
+        return {"kind": "image"}
+
+    if place_visual:
         return {"kind": "image"}
 
     if text_cue:
