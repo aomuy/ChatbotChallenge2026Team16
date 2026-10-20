@@ -1,0 +1,1745 @@
+{
+  "meta": {
+    "title": "W2 contest-exam scope question set",
+    "contest": "InnoWing Chatbot Challenge 2026",
+    "entry_point": "python main.py \"question\"",
+    "time_limit_s": 30,
+    "counts": {
+      "given": 16,
+      "extra": 90,
+      "total": 106,
+      "by_level": {
+        "1": 15,
+        "2": 26,
+        "3": 23,
+        "4": 21,
+        "5": 21
+      },
+      "by_lang": {
+        "en": 76,
+        "zh": 30
+      }
+    },
+    "notes": [
+      "given = official/spec/workshop wording; do not drop or edit question strings.",
+      "Do not overwrite submission_repo/dev_set.json; this file is additive.",
+      "Lab sample_corpus is Harbour Innovation Centre fiction; prefer real Inno Wing pages/photos for gold.",
+      "Lv5 excludes machine workshop and event hall from physical collection.",
+      "No model replies recorded: AZURE_OPENAI_KEY missing on the authoring machine."
+    ],
+    "sites": [
+      "https://innowings.engg.hku.hk/innowing1/",
+      "https://innoacademy.engg.hku.hk"
+    ]
+  },
+  "questions": [
+    {
+      "id": "G01",
+      "set": "given",
+      "level": 1,
+      "lang": "en",
+      "question": "What is 3D printing also known as?",
+      "expected": "Additive manufacturing",
+      "expected_notes": "Official gold in submission_repo/dev_set.json.",
+      "why_in_scope": "Lv1 general knowledge; grader command in dev_set.json.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv1",
+        "text"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G02",
+      "set": "given",
+      "level": 1,
+      "lang": "en",
+      "question": "What does FDM stand for in 3D printing?",
+      "expected": "Fused deposition modelling",
+      "expected_notes": "Official gold. British spelling modelling.",
+      "why_in_scope": "Lv1; official dev set.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv1",
+        "text"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G03",
+      "set": "given",
+      "level": 1,
+      "lang": "en",
+      "question": "Which faculty would you expect an engineering innovation centre to belong to?",
+      "expected": "The Faculty of Engineering",
+      "expected_notes": "Official gold. W0 CLI example is a close variant.",
+      "why_in_scope": "Lv1; official dev set.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv1",
+        "text"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G04",
+      "set": "given",
+      "level": 2,
+      "lang": "en",
+      "question": "When was the deadline for the second round of the Funding Scheme in 2025-26?",
+      "expected": "27 February 2026",
+      "expected_notes": "Official gold. Labs/sample_corpus/funding-scheme.txt says 20 February 2026 — do not use the lab date.",
+      "why_in_scope": "Lv2 text retrieval on the real sites / official gold.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv2",
+        "text",
+        "date"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G05",
+      "set": "given",
+      "level": 2,
+      "lang": "en",
+      "question": "Which two materials are banned from the laser cutter?",
+      "expected": "PVC and polycarbonate",
+      "expected_notes": "Official gold. Lab laser-cutter page matches, but contest gold is this pair.",
+      "why_in_scope": "Lv2 equipment safety fact buried in text.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv2",
+        "equipment",
+        "text"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G06",
+      "set": "given",
+      "level": 3,
+      "lang": "en",
+      "question": "What were the winning teams in Pitch New Tech Ideas in 2025?",
+      "expected": "Smartsocks, Digitio, Gingtrolley",
+      "expected_notes": "Official Lv3 gold. Page body does not list all three; images/alt may say Digitoe.",
+      "why_in_scope": "Lv3 visual: answer lives in an image (or its alt), not the programme blurb.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv3",
+        "image",
+        "alt"
+      ],
+      "failure_mode": "A/B/C never collected/described; alt typo Digitoe vs Digitio"
+    },
+    {
+      "id": "G07",
+      "set": "given",
+      "level": 4,
+      "lang": "en",
+      "question": "How many 3D printers does the Centre run in total?",
+      "expected": "7",
+      "expected_notes": "Official Lv4 gold. May be split across a table (4+2+1 in the lab corpus).",
+      "why_in_scope": "Lv4 counting/aggregation; number may not sit in one chunk.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv4",
+        "count",
+        "equipment"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G08",
+      "set": "given",
+      "level": 4,
+      "lang": "en",
+      "question": "How many workshop posters are on the Innovation Academy websites for 2025?",
+      "expected": "31",
+      "expected_notes": "Official gold. W2: no chunk contains the number 31; must count the set. k=5 cannot succeed.",
+      "why_in_scope": "Lv4 counting over a filtered set; W2 slide 20.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv4",
+        "count",
+        "posters"
+      ],
+      "failure_mode": "semantic search k ceiling"
+    },
+    {
+      "id": "G09",
+      "set": "given",
+      "level": 5,
+      "lang": "en",
+      "question": "On the wall at the back of the brainstorming area, there are three words. HKU, Engineering, and...?",
+      "expected": "Innovation",
+      "expected_notes": "Official Lv5 gold. Full three words are HKU ENGINEERING INNOVATION. Paraphrase scores zero.",
+      "why_in_scope": "Lv5 physical / verbatim wall text; published spec family.",
+      "source": "dev_set.json",
+      "tags": [
+        "lv5",
+        "verbatim",
+        "physical"
+      ],
+      "failure_mode": "caption instead of exact copy"
+    },
+    {
+      "id": "G10",
+      "set": "given",
+      "level": 1,
+      "lang": "en",
+      "question": "What faculty does the Tam Wing Fan Innovation Wing belong to?",
+      "expected": "Engineering",
+      "expected_notes": "W0_Setup_and_Rules.pptx CLI example prints Engineering. Accept Faculty of Engineering.",
+      "why_in_scope": "W0 grader-contract example; same fact as G03 with different wording.",
+      "source": "W0_Setup_and_Rules.pptx",
+      "tags": [
+        "lv1",
+        "text",
+        "w0"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G11",
+      "set": "given",
+      "level": 3,
+      "lang": "en",
+      "question": "How many tables are in Makerspace A?",
+      "expected": "11",
+      "expected_notes": "W2: taken from the published competition specification. Lab page also says eleven work tables, but the spec treats this as a visual extraction.",
+      "why_in_scope": "Published spec Lv3 object-count; description schema field 2.",
+      "source": "W2 published spec (slide 11–12)",
+      "tags": [
+        "lv3",
+        "count",
+        "makerspace"
+      ],
+      "failure_mode": "described badly: 'several tables'"
+    },
+    {
+      "id": "G12",
+      "set": "given",
+      "level": 3,
+      "lang": "en",
+      "question": "What three words are on the wall behind the brainstorming area?",
+      "expected": "HKU ENGINEERING INNOVATION",
+      "expected_notes": "W2 published spec. Copy exactly; do not translate or summarise.",
+      "why_in_scope": "Published spec verbatim signage; schema field 3.",
+      "source": "W2 published spec (slide 11–12)",
+      "tags": [
+        "lv3",
+        "lv5",
+        "verbatim"
+      ],
+      "failure_mode": "paraphrase of the motto"
+    },
+    {
+      "id": "G13",
+      "set": "given",
+      "level": 4,
+      "lang": "en",
+      "question": "Which faculty runs the Innovation Wing, and who is its director?",
+      "expected": "Faculty of Engineering; director name from indexed staff page or nameplate (not lab's Professor Amelia Reyes unless that is on the real site)",
+      "expected_notes": "W2 compound example. Current pages.json has faculty but no director name. Lab corpus director is teaching fiction.",
+      "why_in_scope": "Lv4 decomposition: two subjects, one embedding otherwise lands between faculty and staff pages.",
+      "source": "W2 slide 19/24",
+      "tags": [
+        "lv4",
+        "compound"
+      ],
+      "failure_mode": "compound embedding midpoint; answers only the first clause"
+    },
+    {
+      "id": "G14",
+      "set": "given",
+      "level": 4,
+      "lang": "en",
+      "question": "How many workshop posters are on the Innovation Academy website for 2025?",
+      "expected": "31",
+      "expected_notes": "W2 wording uses singular website; G08 uses websites. Keep both; grader may pick either.",
+      "why_in_scope": "W2 counting lecture; same gold as G08, different surface form.",
+      "source": "W2 slide 20",
+      "tags": [
+        "lv4",
+        "count",
+        "posters"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G15",
+      "set": "given",
+      "level": 5,
+      "lang": "en",
+      "question": "What three words are on the wall behind the seating?",
+      "expected": "HKU ENGINEERING INNOVATION",
+      "expected_notes": "Labs/lab4_description_prompt.ipynb TEST_QUESTIONS example. Same gold as G12, seating vs brainstorming area.",
+      "why_in_scope": "Workshop-given visual/layout probe the lab tells teams to write.",
+      "source": "Labs/lab4_description_prompt.ipynb",
+      "tags": [
+        "lv5",
+        "verbatim",
+        "lab4"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "G16",
+      "set": "given",
+      "level": 5,
+      "lang": "en",
+      "question": "What is on the bench by the window?",
+      "expected": "Electronics bench equipment (soldering stations, PSU, oscilloscope, hot-air rework) — confirm from the team's photo of Makerspace B.",
+      "expected_notes": "lab4 example. Lab text lists two soldering stations, a bench PSU, a two-channel oscilloscope, a hot air rework station.",
+      "why_in_scope": "In-scope equipment + spatial relation (by the window).",
+      "source": "Labs/lab4_description_prompt.ipynb",
+      "tags": [
+        "lv5",
+        "equipment",
+        "spatial"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X01",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "3D 打印也被称为什么？",
+      "expected": "Additive manufacturing",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese stem of G01; grader is English but user asked Chinese tests.",
+      "source": "G01 zh mirror",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X02",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "在 3D 打印里，FDM 代表什么？",
+      "expected": "Fused deposition modelling",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese stem of G02.",
+      "source": "G02 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X03",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "Tam Wing Fan Innovation Wing 属于哪个学院？",
+      "expected": "Faculty of Engineering",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese stem of G10/G03.",
+      "source": "G10 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X04",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "激光切割机禁止使用哪两种材料？",
+      "expected": "PVC and polycarbonate",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese stem of G05.",
+      "source": "G05 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X05",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "2025-26 学年 Funding Scheme 第二轮截止日期是哪一天？",
+      "expected": "27 February 2026",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G04; ignore lab 20 Feb.",
+      "source": "G04 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X06",
+      "set": "extra",
+      "level": 3,
+      "lang": "zh",
+      "question": "2025 年 Pitch New Tech Ideas 的优胜队伍有哪些？",
+      "expected": "Smartsocks, Digitio, Gingtrolley",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G06.",
+      "source": "G06 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X07",
+      "set": "extra",
+      "level": 4,
+      "lang": "zh",
+      "question": "中心一共运行多少台 3D 打印机？",
+      "expected": "7",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G07.",
+      "source": "G07 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X08",
+      "set": "extra",
+      "level": 4,
+      "lang": "zh",
+      "question": "2025 年 Innovation Academy 网站上有多少张 workshop 海报？",
+      "expected": "31",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G14.",
+      "source": "G14 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X09",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "头脑风暴区后方墙上的三个词是什么？",
+      "expected": "HKU ENGINEERING INNOVATION",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G12.",
+      "source": "G12 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X10",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "在头脑风暴区后方的墙上有三个词。HKU、Engineering，以及……？",
+      "expected": "Innovation",
+      "expected_notes": "Surface-form variant of an official/spec question; gold unchanged.",
+      "why_in_scope": "Chinese of G09 fill-in.",
+      "source": "G09 zh",
+      "tags": [
+        "mirror",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X11",
+      "set": "extra",
+      "level": 1,
+      "lang": "en",
+      "question": "What does the abbreviation FDM expand to?",
+      "expected": "Fused deposition modelling",
+      "expected_notes": "Paraphrase of G02; retrieval/LLM must not invent Fused Deposition Modeling US spelling if gold is modelling.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "lv1 paraphrase",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X12",
+      "set": "extra",
+      "level": 1,
+      "lang": "en",
+      "question": "Is 3D printing a subtractive or additive process?",
+      "expected": "Additive (additive manufacturing)",
+      "expected_notes": "Lv1 concept behind G01.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "lv1",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X13",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "港大 Tam Wing Fan Innovation Wing 的英文全称是什么？",
+      "expected": "Tam Wing Fan Innovation Wing",
+      "expected_notes": "Name exactness; W0/W2 subject of the contest.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "lv1 name",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X14",
+      "set": "extra",
+      "level": 1,
+      "lang": "en",
+      "question": "Which university houses the Tam Wing Fan Innovation Wing?",
+      "expected": "The University of Hong Kong (HKU)",
+      "expected_notes": "pages.json heading text: Faculty of Engineering The University of Hong Kong.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "lv1/lv2",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X15",
+      "set": "extra",
+      "level": 1,
+      "lang": "en",
+      "question": "What academic fields does Inno Wing say it promotes interdisciplinary innovation in?",
+      "expected": "Engineering and Technology",
+      "expected_notes": "Lv1/Lv2 about-page fact.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "pages.json About Inno Wing",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X16",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "Inno Wing 的教育目标 Educational Aim 强调把项目交给谁来主导？",
+      "expected": "Students / undergraduates (entrusting and empowering students)",
+      "expected_notes": "About page educational aim.",
+      "why_in_scope": "Lv1/easy site fact the prelim still scores.",
+      "source": "lv2-ish but general",
+      "tags": [
+        "lv1"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X17",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What is Pitch New Tech Ideas according to Innovation Academy?",
+      "expected": "A project pitching event for students to present ideas and recruit teammates and academic advisors to form student interest groups.",
+      "expected_notes": "pages.json heading Pitch New Tech Ideas. Contrast with G06 (winners are NOT in this paragraph).",
+      "why_in_scope": "Lv2 programme text vs Lv3 image-only winners.",
+      "source": "pages.json",
+      "tags": [
+        "lv2",
+        "pitch"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X18",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What three goals do Innovation Academy programmes capture?",
+      "expected": "Inspire, Equip and Showcase",
+      "expected_notes": "pages.json Our Programmes & Activities.",
+      "why_in_scope": "Lv2 buried list on the Academy site.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X19",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What does the Innovation Academy say it is a hub for?",
+      "expected": "Attracting and cultivating talents: scholars, researchers, industry leaders and influencers; an accelerator for inspiration and implementation.",
+      "expected_notes": "pages.json About us.",
+      "why_in_scope": "Lv2 about-text.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X20",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "Name the four student interest groups listed on the Innovation Wing One page.",
+      "expected": "Design, Build and Fly; Engineering and Archaeology; HKU Racing; HKU Robocon",
+      "expected_notes": "Headings on innowings.engg.hku.hk/innowing1/. Empty body text — titles themselves are the fact.",
+      "why_in_scope": "Lv2/heading retrieval; related posters are Lv3.",
+      "source": "pages.json SIG headings",
+      "tags": [
+        "lv2",
+        "sig"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X21",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "Innovation Academy 的 Funding Scheme 用的是哪两个基金的名字？",
+      "expected": "Tam Wing Fan Innovation Fund and Philomathia Foundation Innovation Fund",
+      "expected_notes": "pages.json Funding Scheme for projects / activities.",
+      "why_in_scope": "Lv2 named funds on the real Academy page.",
+      "source": "pages.json",
+      "tags": [
+        "lv2",
+        "funding"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X22",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What medal did HKU iGEM win at the 2025 iGEM Competition?",
+      "expected": "Gold Medal",
+      "expected_notes": "Student Achievements text AND image alt on innoacademy.engg.hku.hk.",
+      "why_in_scope": "Lv2 if indexed from the achievements paragraph; also in image alt (Lv3 fallback).",
+      "source": "pages.json Student Achievements",
+      "tags": [
+        "lv2",
+        "achievements"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X23",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "Which project did the SRA team win the HKAE Pitch Competition with?",
+      "expected": "ACTalyse: Adaptive Communication Training for Interdisciplinary Professionals",
+      "expected_notes": "Achievements paragraph / image alt.",
+      "why_in_scope": "Lv2 long proper name; easy to truncate.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X24",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What result did HKU RAICOM Robotics achieve, in which category, and where/when was the national final?",
+      "expected": "Third Class Honour in Treasure Hunter – Semi-Autonomous Mission; RAICOM National Final, August 2025, Hangzhou.",
+      "expected_notes": "Compound-looking but all in one achievements sentence — still Lv2 if retrieved; good routing test vs Lv4.",
+      "why_in_scope": "Long fact; models drop category or city.",
+      "source": "pages.json",
+      "tags": [
+        "lv2",
+        "compound-surface"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X25",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "Which Student Interest Group was selected for the Hult Prize 2025 Incubator Programme?",
+      "expected": "WeGoALGAE",
+      "expected_notes": "Achievements + image alt/caption.",
+      "why_in_scope": "Lv2 named SIG.",
+      "source": "pages.json / images.json alt",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X26",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "Who was crowned champion at the HKAE Pitch Competition on Grand Challenge Engineering Topics for University Students 2024-25?",
+      "expected": "Innogrow",
+      "expected_notes": "Alt: Innogrow crowned champion…",
+      "why_in_scope": "Lv2/alt; year 2024-25 not 2025 Pitch New Tech.",
+      "source": "images.json alt",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X27",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What place did RoboMaster achieve at the RMUL Zhejiang Station competition?",
+      "expected": "Fourth place",
+      "expected_notes": "Student Achievements / alt.",
+      "why_in_scope": "Lv2 numeric result in text.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X28",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "Engineering Inno Show 是什么活动、在什么时候举办？",
+      "expected": "A showcase carnival at the end of every semester celebrating learning and creation; students demo projects and get feedback.",
+      "expected_notes": "pages.json Inno Show. Not Event Hall capacity (out of Lv5 collection).",
+      "why_in_scope": "Lv2 programme text on the Academy site.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X29",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What is a Student Initiated Course at Innovation Academy?",
+      "expected": "A student-run experiential activity to design, develop and teach a technology-related course under a Faculty Advisor; topics not covered in the formal curriculum.",
+      "expected_notes": "pages.json Student-initiated courses.",
+      "why_in_scope": "Lv2.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X30",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What topics does Pitch New Tech Ideas list as example SIG areas?",
+      "expected": "Robotics, artificial intelligence, electric automobiles and healthcare technologies",
+      "expected_notes": "Same Pitch paragraph as X17; list extraction.",
+      "why_in_scope": "Lv2 list; incomplete list = 0.5.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X31",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "Innovation Wing Tutor 团队用一句话怎么描述自己？",
+      "expected": "Multidisciplinary Tutor Team – Broadest engineering skill coverage",
+      "expected_notes": "pages.json Innovation Wing Tutor. Verbatim of the heading text.",
+      "why_in_scope": "Short site slogan; paraphrase may lose 'broadest'.",
+      "source": "pages.json",
+      "tags": [
+        "lv2",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X32",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What intern skill areas does Student Development Projects mention?",
+      "expected": "Artificial intelligence, computer vision, electronics, and robotics",
+      "expected_notes": "pages.json Student Development Projects.",
+      "why_in_scope": "Lv2.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X33",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "Which two materials may be cut on the laser cutter in the sample equipment page?",
+      "expected": "Contest gold for banned materials is PVC and polycarbonate (G05). Permitted in the lab page: acrylic, plywood and cardboard.",
+      "expected_notes": "If the real site whitelist differs, use the real site. This extra tests permitted vs banned pairing.",
+      "why_in_scope": "Equipment text retrieval; related to G05.",
+      "source": "Labs/sample_corpus/equipment-laser-cutter.txt (lab) / real equipment pages",
+      "tags": [
+        "lv2",
+        "equipment"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X34",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "Funding Scheme 的钱可以花在什么上、不可以花在什么上？（若网页有清单）",
+      "expected": "Lab gold: materials, components, consumables, equipment under $500; not travel, catering, salaries, software subscriptions. Confirm on the live funding page.",
+      "expected_notes": "Lab funding-scheme.txt. Real Philomathia/Tam Wing Fan scheme text may differ — retrieve don't memorise lab.",
+      "why_in_scope": "Lv2 eligibility rules.",
+      "source": "lab corpus / real funding page",
+      "tags": [
+        "lv2",
+        "funding"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X35",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What exact text is on the sign above the door of Makerspace A?",
+      "expected": "MAKERSPACE A",
+      "expected_notes": "W2 slide 14 Prompt B sample extraction.",
+      "why_in_scope": "Verbatim signage; paraphrase of room name is not enough.",
+      "source": "W2 slide 14",
+      "tags": [
+        "lv3",
+        "verbatim"
+      ],
+      "failure_mode": "C described badly"
+    },
+    {
+      "id": "X36",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "How many 3D printers stand along the north wall of Makerspace A?",
+      "expected": "4",
+      "expected_notes": "W2 slide 11 example description. Different from G07 total of 7.",
+      "why_in_scope": "Count + spatial relation inside an image.",
+      "source": "W2 slide 11",
+      "tags": [
+        "lv3",
+        "count",
+        "spatial"
+      ],
+      "failure_mode": "confuses room total with wall count"
+    },
+    {
+      "id": "X37",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What does the whiteboard in Makerspace A say about booking?",
+      "expected": "Booking via portal",
+      "expected_notes": "W2 slide 11. Copy, don't summarise as 'book online'.",
+      "why_in_scope": "Visible text field 3.",
+      "source": "W2 slide 11",
+      "tags": [
+        "lv3",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X38",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What material are the four-person tables in Makerspace A?",
+      "expected": "Wooden / wooden tables",
+      "expected_notes": "W2 example: eleven wooden tables.",
+      "why_in_scope": "Colour/material only where it identifies the object (schema field 5).",
+      "source": "W2 slide 11",
+      "tags": [
+        "lv3",
+        "material"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X39",
+      "set": "extra",
+      "level": 3,
+      "lang": "zh",
+      "question": "Makerspace A 里有多少张桌子？",
+      "expected": "11",
+      "expected_notes": "Chinese of G11.",
+      "why_in_scope": "Published spec count in the user's language.",
+      "source": "W2 spec zh",
+      "tags": [
+        "lv3",
+        "count",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X40",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "How many chairs are in Makerspace A in the workshop example extraction?",
+      "expected": "Eleven chairs (W2 slide 14 Prompt B). Confirm on the team's photo — spec example used 11 chairs and 11 tables.",
+      "expected_notes": "Slide 14 lists four 3D printers, eleven chairs, two workbenches.",
+      "why_in_scope": "Object counts; 'some chairs' fails.",
+      "source": "W2 slide 14",
+      "tags": [
+        "lv3",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X41",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "How many workbenches does the W2 example description record in Makerspace A?",
+      "expected": "Two workbenches",
+      "expected_notes": "W2 slide 14.",
+      "why_in_scope": "Second count besides tables.",
+      "source": "W2 slide 14",
+      "tags": [
+        "lv3",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X42",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What is the title text on the Design, Build and Fly 2023 poster hosted on Innovation Wing?",
+      "expected": "Read from the poster pixels (images.json has 01.-Design-Build-and-Fly-Team-2023-Poster-723x1024-1.png with empty alt).",
+      "expected_notes": "Empty alt → must describe/OCR. W2 tiling/small-print failure.",
+      "why_in_scope": "Lv3 dense poster; never collected or small text lost after downscale.",
+      "source": "data/images.json",
+      "tags": [
+        "lv3",
+        "poster",
+        "ocr"
+      ],
+      "failure_mode": "small print / no alt"
+    },
+    {
+      "id": "X43",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "Which Pitch New Tech Ideas 2025 winner was selected for the 8th HKTDC Start-up Express?",
+      "expected": "Digitio (image alt writes Digitoe)",
+      "expected_notes": "images.json alt. Tests alt indexing without vision, and spelling vs G06 gold Digitio.",
+      "why_in_scope": "W2: index alt text regardless.",
+      "source": "data/images.json",
+      "tags": [
+        "lv3",
+        "alt"
+      ],
+      "failure_mode": "never collected; spelling"
+    },
+    {
+      "id": "X44",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What does the Innovation Wing logo image contain (text or mark)?",
+      "expected": "Whatever is visible on InnoWing-Logo.jpg — transcribe any wordmark exactly.",
+      "expected_notes": "images.json, empty alt. Logo is a classic 'never described' miss.",
+      "why_in_scope": "Lv3 image with no alt.",
+      "source": "data/images.json",
+      "tags": [
+        "lv3"
+      ],
+      "failure_mode": "B never described"
+    },
+    {
+      "id": "X45",
+      "set": "extra",
+      "level": 3,
+      "lang": "zh",
+      "question": "HKU Robocon 在 ABU Robocon 为香港取得了什么历史成绩？（以成就图/说明为准）",
+      "expected": "Historic first championship representing Hong Kong (alt: clinches historic first championship).",
+      "expected_notes": "Image alt on innoacademy; also in Student Achievements text so may be Lv2 if that paragraph is indexed.",
+      "why_in_scope": "Visual card + alt; if scraper skipped img, text paragraph may still save it.",
+      "source": "images.json alt",
+      "tags": [
+        "lv3",
+        "alt"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X46",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What typo appears in the Robocon Hong Kong 2026 image alt text?",
+      "expected": "cllinches (double l) in 'HKU Robocon cllinches back-to-back victory…'",
+      "expected_notes": "If the bot copies alt exactly it will reproduce the typo; if it 'fixes' it, retrieval still must find the chunk.",
+      "why_in_scope": "Alt indexing; exact-copy vs silent correction.",
+      "source": "images.json",
+      "tags": [
+        "lv3",
+        "alt",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X47",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "Transcribe every word visible on the wall behind the brainstorming seating, in order.",
+      "expected": "HKU ENGINEERING INNOVATION (write [unreadable] for any glyph you cannot see — W2 instruction)",
+      "expected_notes": "Same gold as G12; stresses order and no guessing.",
+      "why_in_scope": "Verbatim + unreadable policy from W2 slide 12.",
+      "source": "W2 slide 12",
+      "tags": [
+        "lv3",
+        "verbatim"
+      ],
+      "failure_mode": "invented words instead of [unreadable]"
+    },
+    {
+      "id": "X48",
+      "set": "extra",
+      "level": 3,
+      "lang": "zh",
+      "question": "Makerspace A 北墙的 3D 打印机在桌子的哪一侧、对着什么？",
+      "expected": "Along the north wall; spatial relation as in the team's photo (W2 example: printers along the north wall, tables in the room).",
+      "expected_notes": "Schema field 4. Do not accept 'equipment along the far wall'.",
+      "why_in_scope": "Spatial relations the caption-style prompt drops.",
+      "source": "W2 schema",
+      "tags": [
+        "lv3",
+        "spatial"
+      ],
+      "failure_mode": "C generic caption"
+    },
+    {
+      "id": "X49",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "Copy the alt text of the AI workshop image on the Innovation Academy homepage.",
+      "expected": "AI workshop - Build you ChatBot",
+      "expected_notes": "images.json alt, including the grammar error you.",
+      "why_in_scope": "Alt already text; W2 says index it. Tests exact copy of a short line.",
+      "source": "data/images.json",
+      "tags": [
+        "lv3",
+        "alt",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X50",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "Describe only the visible text on the 2023 Design-Build-and-Fly poster, not the layout.",
+      "expected": "OCR/transcription of the poster (second, text-only description pass — W2 slide 16).",
+      "expected_notes": "Advanced technique: two prompts per image, one objects, one text-only.",
+      "why_in_scope": "Dense signage; vision paraphrases, OCR transcribes.",
+      "source": "W2 slides 16–17",
+      "tags": [
+        "lv3",
+        "ocr",
+        "poster"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X51",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Which faculty runs the Tam Wing Fan Innovation Wing, and who is its director?",
+      "expected": "Faculty of Engineering + director from staff/nameplate. W2 split example uses this longer name in sub-question 1.",
+      "expected_notes": "Slide 24 split wording. Keep G13 short form and this long form.",
+      "why_in_scope": "Same compound skill; Tam Wing Fan full name vs Innovation Wing.",
+      "source": "W2 slide 24",
+      "tags": [
+        "lv4",
+        "compound"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X52",
+      "set": "extra",
+      "level": 4,
+      "lang": "zh",
+      "question": "哪个学院运营 Innovation Wing，主任是谁？",
+      "expected": "学院 Faculty of Engineering；主任需真站/铭牌。不要用 lab 的 Professor Amelia Reyes 除非真站如此。",
+      "expected_notes": "Chinese of G13.",
+      "why_in_scope": "User-language compound question.",
+      "source": "W2 zh",
+      "tags": [
+        "lv4",
+        "compound",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X53",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "List each 3D printer model the Centre runs and the count per model, then the total.",
+      "expected": "Lab split: 4× Prusa MK4, 2× Bambu X1C, 1× Formlabs Form 4, total 7. Confirm against the real equipment page/photos.",
+      "expected_notes": "W2: list evidence first then answer. Current answer.py strips to the first digit on 'how many' — this stem avoids that somewhat but still contains counts.",
+      "why_in_scope": "Lv4 aggregate + evidence list.",
+      "source": "dev_set G07 + lab equipment table",
+      "tags": [
+        "lv4",
+        "count",
+        "equipment"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X54",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "How many FDM printers and how many resin printers does the Centre run?",
+      "expected": "Lab: 6 FDM (4 Prusa + 2 Bambu) and 1 resin (Form 4). Total still 7.",
+      "expected_notes": "Comparison/filter inside the printer set.",
+      "why_in_scope": "Lv4 filter then count; two numbers in one question.",
+      "source": "lab equipment-3d-printers.txt",
+      "tags": [
+        "lv4",
+        "count",
+        "compound"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X55",
+      "set": "extra",
+      "level": 4,
+      "lang": "zh",
+      "question": "Makerspace A 和 Makerspace B 的容量分别是多少人？哪个适合个人不预约进场？",
+      "expected": "Lab: A 40, B 24; individuals use B drop-in desks. Verify on real venue pages/photos.",
+      "expected_notes": "Two rooms + a policy clause = decompose.",
+      "why_in_scope": "Lv4 multi-subject.",
+      "source": "lab venues pages",
+      "tags": [
+        "lv4",
+        "compound",
+        "venues"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X56",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "How many of the homepage SIG names refer to student racing or robot competitions?",
+      "expected": "At least HKU Racing and HKU Robocon (2). Design, Build and Fly is also a competition team — count 3 if the team includes DBF; say which rule you used.",
+      "expected_notes": "Answer is not written; must list SIGs then classify. Typical Lv4.",
+      "why_in_scope": "Count after retrieving a set of headings.",
+      "source": "pages.json SIG headings",
+      "tags": [
+        "lv4",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X57",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Among the Student Achievements on the Innovation Academy homepage, how many distinct teams or projects are named?",
+      "expected": "Count the named entities in that paragraph (HKU Engineering Team/Robocon, SRA/ACTalyse, iGEM, RAICOM Robotics, Digitoe, WeGoALGAE, Innogrow, RoboMaster) — about 8. List them then count.",
+      "expected_notes": "No chunk contains the integer. Metadata/list-then-count.",
+      "why_in_scope": "Lv4 set count like the 31 posters.",
+      "source": "pages.json Student Achievements",
+      "tags": [
+        "lv4",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X58",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Which achievements on the Academy site happened in 2025, and which in 2026?",
+      "expected": "2025: iGEM gold, RAICOM (Aug 2025 Hangzhou), Pitch New Tech Ideas / HKTDC, Hult Prize 2025, RMUL. 2026: Robocon Hong Kong 2026, ABU Robocon championship item dated 2026 in image URLs. List evidence by year.",
+      "expected_notes": "Needs year metadata or filtering; mixed years in one blob.",
+      "why_in_scope": "Lv4 filter by year then list.",
+      "source": "pages.json / images.json dates",
+      "tags": [
+        "lv4",
+        "filter"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X59",
+      "set": "extra",
+      "level": 4,
+      "lang": "zh",
+      "question": "同时回答：Inno Show 在每学期什么时候举行，以及 Pitch New Tech Ideas 用来组建什么？",
+      "expected": "Inno Show: end of every semester. Pitch: form student interest groups (recruit teammates and advisors).",
+      "expected_notes": "Two programme pages; one embedding sits between them.",
+      "why_in_scope": "Lv4 decompose two subjects.",
+      "source": "pages.json",
+      "tags": [
+        "lv4",
+        "compound"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X60",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "How many images are currently recorded in submission_repo/data/images.json, and how many of those have non-empty alt text?",
+      "expected": "26 images, 11 with alt (inventory at the time this set was written). Re-count from the JSON if rebuilt.",
+      "expected_notes": "Not a contest gold — diagnostic count for Cause A. Still the same skill as poster counting.",
+      "why_in_scope": "Counting over a stored image inventory; kNN cannot answer.",
+      "source": "data/images.json",
+      "tags": [
+        "lv4",
+        "count",
+        "diagnostic"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X61",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Compare Makerspace A booking rules with Makerspace B: who may book A, and what can you use in B without a booking?",
+      "expected": "Lab: teams of three or more book A; B has six drop-in desks without booking. Confirm live.",
+      "expected_notes": "Comparison across two venue chunks.",
+      "why_in_scope": "Lv4 comparison.",
+      "source": "lab venues",
+      "tags": [
+        "lv4",
+        "venues"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X62",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Does the Centre's 7 printers figure include the four along Makerspace A's north wall, or are those extra? Explain from evidence.",
+      "expected": "Need both the total-7 chunk and the north-wall-4 image description. If photos show printers in A that are the same print-room bank, 7 is inclusive; if A has a separate row, totals change. List evidence; do not guess.",
+      "expected_notes": "Crosses G07 (Lv4 text/table) and X36 (Lv3 image). True synthesis.",
+      "why_in_scope": "Lv4 assemble from image description + equipment text.",
+      "source": "W2 + dev_set",
+      "tags": [
+        "lv4",
+        "synthesis"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X63",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "站在头脑风暴区座位区，背后墙上三个英文词从左到右原文是什么？",
+      "expected": "HKU ENGINEERING INNOVATION",
+      "expected_notes": "Must come from the team's own photo (Labs/images/Brainstorming aerial.JPG for practice).",
+      "why_in_scope": "Lv5 in-scope venue signage; same gold as G12 but physical capture.",
+      "source": "W2 Lv5 + lab images",
+      "tags": [
+        "lv5",
+        "verbatim",
+        "venues"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X64",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "Where are the mobile whiteboards in the brainstorming area relative to the seating?",
+      "expected": "Lab: four mobile whiteboards along the back wall; seating in front. Confirm from aerial photo.",
+      "expected_notes": "Schema field 4 layout.",
+      "why_in_scope": "Physical layout; not the Event Hall.",
+      "source": "lab venues-brainstorming-area.txt + Brainstorming aerial.JPG",
+      "tags": [
+        "lv5",
+        "spatial"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X65",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "How many mobile whiteboards are kept in the brainstorming area?",
+      "expected": "Four (lab). Count from the photo, not from memory of the lab page if you are testing Lv5.",
+      "expected_notes": "If the bot answers from sample_corpus text it is cheating the Lv5 skill even if the number matches.",
+      "why_in_scope": "Lv5 object count in an in-scope venue.",
+      "source": "physical / lab",
+      "tags": [
+        "lv5",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X66",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "Makerspace B 靠窗的 electronics bench 上有哪些仪器、各几台？",
+      "expected": "Lab: 2 soldering stations, 1 bench power supply, 1 two-channel oscilloscope, 1 hot air rework station. Photograph to confirm.",
+      "expected_notes": "In-scope equipment. Window spatial cue from G16.",
+      "why_in_scope": "W2 equipment + G16.",
+      "source": "lab equipment-electronics-bench.txt",
+      "tags": [
+        "lv5",
+        "equipment",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X67",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "What colour and material identify the sofas or seating in the brainstorming area in your photos?",
+      "expected": "Whatever the photo shows (W2 example mentioned colourful cubic sofas / a large blue sign). Copy colours only if they identify the object.",
+      "expected_notes": "Schema field 5. Do not write 'modern furniture'.",
+      "why_in_scope": "Physical colour/material identification.",
+      "source": "W2 DESCRIPTION_PROMPT example",
+      "tags": [
+        "lv5",
+        "colour"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X68",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "What award names and team names are on the award board in the gallery outside the office?",
+      "expected": "Only from photographs of the gallery board. Lab news page says winners are on that board and not listed in the article.",
+      "expected_notes": "W2 in-scope: gallery outside the office. Webpage is an index, not the answer.",
+      "why_in_scope": "Lv5 gallery; cannot scrape.",
+      "source": "W2 slide 27 + lab news-2025-awards.txt",
+      "tags": [
+        "lv5",
+        "gallery",
+        "posters"
+      ],
+      "failure_mode": "answered from news prose with no names"
+    },
+    {
+      "id": "X69",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "办公室外走廊 gallery 里，当前奖项板/展示照片上能逐字读到哪些队名？",
+      "expected": "Transcribe from gallery photos. Do not invent from Academy homepage achievements.",
+      "expected_notes": "Verbatim from physical posters in the gallery.",
+      "why_in_scope": "Lv5 posters in the gallery zone.",
+      "source": "W2 slide 27",
+      "tags": [
+        "lv5",
+        "gallery",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X70",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "On the building floor plan in the gallery, which rooms are labelled besides the makerspaces?",
+      "expected": "Read labels off the photographed floor plan. Lab gallery-index.txt says a floor plan hangs there.",
+      "expected_notes": "Visible text on a physical exhibit.",
+      "why_in_scope": "Gallery + verbatim labels.",
+      "source": "lab gallery-index.txt",
+      "tags": [
+        "lv5",
+        "gallery"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X71",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "Where are the tool lockers in Makerspace A, and how many banks/rows are visible?",
+      "expected": "Lab: a bank of tool lockers along the east wall. Count banks from makerspace.JPG / Makerspace close up.JPG.",
+      "expected_notes": "In-scope venue + equipment storage, not the machine workshop.",
+      "why_in_scope": "Spatial + count in Makerspace A.",
+      "source": "lab + Labs/images",
+      "tags": [
+        "lv5",
+        "spatial",
+        "equipment"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X72",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "Makerspace A 北墙大屏能用哪些接口连接笔记本？（若现场贴纸/铭牌有写）",
+      "expected": "Lab page: HDMI or USB-C. Prefer sticker/label on the display if photographed.",
+      "expected_notes": "If only on the website, this drops to Lv2; if on a physical label, Lv5.",
+      "why_in_scope": "Equipment labels in an in-scope room.",
+      "source": "venues-makerspace-a.txt / photo",
+      "tags": [
+        "lv5",
+        "equipment",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X73",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "Copy any safety or booking notice posted on the door or wall of Makerspace A or B, word for word.",
+      "expected": "Exact poster/door text from the team's zone photos. Use [unreadable] rather than guess.",
+      "expected_notes": "W2 verbatim policy for physical signs.",
+      "why_in_scope": "Lv5 visible text in venues (not machine workshop).",
+      "source": "W2 schema field 3",
+      "tags": [
+        "lv5",
+        "verbatim"
+      ],
+      "failure_mode": "paraphrase → 0"
+    },
+    {
+      "id": "X74",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "How many work tables are visible in your Makerspace A photographs, and does that match eleven?",
+      "expected": "Count from Labs/images/makerspace.JPG and close-up; gold if fully visible is 11 (spec).",
+      "expected_notes": "Self-written Lv5 question after first photo pass — W2 slide 29.",
+      "why_in_scope": "Physical recount of the spec table question.",
+      "source": "W2 spec + lab photos",
+      "tags": [
+        "lv5",
+        "count"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X75",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "What is the seating capacity of the Event Hall, and which microphones does it have?",
+      "expected": "Do not answer from Lv5 photos — Event Hall is OUT of collection scope (W2 slide 27). If a website page exists: lab says 180 seats, lectern mic + four radio mics.",
+      "expected_notes": "Negative-scope item. Collection kit forbids machine workshop and event hall.",
+      "why_in_scope": "Tests the exclusion boundary the grader still might ask as Lv2 web text, never as a photo question.",
+      "source": "W2 slide 27 exclusion",
+      "tags": [
+        "exclusion",
+        "event-hall",
+        "lv2-if-web"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X76",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "Machine workshop / 金工车间的床身尺寸或设备型号是什么？",
+      "expected": "Out of Lv5 collection scope (machine workshop excluded). Only answer if the official websites publish it (then it is Lv2).",
+      "expected_notes": "Laser cutter Trotec Speedy 400 1000x610mm is lab machine-room text — that room is excluded from physical capture.",
+      "why_in_scope": "Exclusion pair with X75.",
+      "source": "W2 slide 27",
+      "tags": [
+        "exclusion",
+        "machine-workshop"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X77",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "Describe this image of Makerspace A.",
+      "expected": "A generic caption is a FAILED answer for scoring. The useful answer is the five-field extraction (location, counts, verbatim text, spatial, identifying colours).",
+      "expected_notes": "Anti-pattern from W2 slide 14 Prompt A. Included so teams see that this user phrasing yields zero on spec questions.",
+      "why_in_scope": "Documents the failure mode the grader will not ask but your prompt must not emulate.",
+      "source": "W2 slide 14 Prompt A",
+      "tags": [
+        "failure-mode",
+        "do-not-use-as-gold"
+      ],
+      "failure_mode": "Prompt A caption"
+    },
+    {
+      "id": "X78",
+      "set": "extra",
+      "level": 1,
+      "lang": "en",
+      "question": "Which faculty would you expect an engineering innovation centreto belong to?",
+      "expected": "The Faculty of Engineering",
+      "expected_notes": "Exact typo from the command string inside dev_set.json (missing space before 'to'). Keep as a robustness extra, not a replacement for G03.",
+      "why_in_scope": "The bundled command in dev_set.json literally has centreto; a brittle matcher could fail.",
+      "source": "dev_set.json command field",
+      "tags": [
+        "robustness",
+        "typo"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X79",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Name the director of the Innovation Wing, and which faculty runs it? (director first)",
+      "expected": "Same two facts as G13, reversed order. Faculty of Engineering + director.",
+      "expected_notes": "Without labelled sub-question chunks the model often answers only the first part — here that would be the harder half.",
+      "why_in_scope": "Lv4 clause order trap from W2 slide 24 note.",
+      "source": "W2 slide 24",
+      "tags": [
+        "lv4",
+        "compound"
+      ],
+      "failure_mode": "answers only first clause"
+    },
+    {
+      "id": "X80",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What is the Engineering Inno Show described as on the Innovation Wing site?",
+      "expected": "Visit our Engineering Inno Show is a heading with empty body on innowing1; Academy page calls it a showcase carnival at end of semester.",
+      "expected_notes": "Empty heading vs full paragraph — retrieval must not stop at the empty Inno Wing section.",
+      "why_in_scope": "Lv2 across both contest sites (scrape both).",
+      "source": "pages.json both sites",
+      "tags": [
+        "lv2",
+        "both-sites"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X81",
+      "set": "extra",
+      "level": 1,
+      "lang": "zh",
+      "question": "FDM 3D 打印的中文里常说的熔融沉积，对应的英文全称是什么？",
+      "expected": "Fused deposition modelling",
+      "expected_notes": "Still G02 gold.",
+      "why_in_scope": "Lv1 bilingual.",
+      "source": "dev_set G02",
+      "tags": [
+        "lv1",
+        "zh"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X82",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What format can Innovation Academy Sharings take?",
+      "expected": "Flexible: talks, one-on-one dialogue, or panel discussion, with guest speakers (entrepreneurs, industry partners, researchers, alumni).",
+      "expected_notes": "pages.json Sharing.",
+      "why_in_scope": "Lv2.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X83",
+      "set": "extra",
+      "level": 2,
+      "lang": "en",
+      "question": "What is the Hands-on workshop programme borrowed from, conceptually?",
+      "expected": "The writer-in-residence concept, for exchange on advanced technologies / research from Faculty of Engineering projects.",
+      "expected_notes": "pages.json Hands-on workshop.",
+      "why_in_scope": "Lv2 unusual phrasing good for retrieval tests.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X84",
+      "set": "extra",
+      "level": 2,
+      "lang": "zh",
+      "question": "Study Tour 带学生去看什么？",
+      "expected": "Prestigious universities and cutting-edge companies; latest technology and robotics R&D.",
+      "expected_notes": "pages.json Study Tour.",
+      "why_in_scope": "Lv2.",
+      "source": "pages.json",
+      "tags": [
+        "lv2"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X85",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "What three words appear behind the brainstorming area: copy them in ALL CAPS as on the wall.",
+      "expected": "HKU ENGINEERING INNOVATION",
+      "expected_notes": "Case-sensitive copy. W2: paraphrased sign scores zero.",
+      "why_in_scope": "Verbatim case.",
+      "source": "W2",
+      "tags": [
+        "lv3",
+        "verbatim"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X86",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "How many workshop posters for 2025 are on the Innovation Academy site, and name one of them if your index stores titles.",
+      "expected": "31, plus any one indexed poster title. The integer is not written on the site.",
+      "expected_notes": "Count + example; needs full-set retrieval then listing.",
+      "why_in_scope": "Lv4 count plus a retrieved instance.",
+      "source": "W2 + G08",
+      "tags": [
+        "lv4",
+        "count",
+        "compound"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X87",
+      "set": "extra",
+      "level": 5,
+      "lang": "en",
+      "question": "In Makerspace B, where is the parts store / consumables cupboard relative to the door?",
+      "expected": "Lab: small parts store in the cupboard by the door. Confirm photographically.",
+      "expected_notes": "In-scope venue, not machine workshop.",
+      "why_in_scope": "Lv5 spatial equipment storage.",
+      "source": "venues-makerspace-b.txt",
+      "tags": [
+        "lv5",
+        "spatial"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X88",
+      "set": "extra",
+      "level": 5,
+      "lang": "zh",
+      "question": "gallery 走廊是否在办公时间以外开放？现场指示牌怎么写？",
+      "expected": "Lab gallery page: open whenever the building is open. Prefer the physical sign if present.",
+      "expected_notes": "Hours on a gallery sign = Lv5 verbatim; hours only on website = Lv2.",
+      "why_in_scope": "Gallery in-scope.",
+      "source": "gallery-index.txt",
+      "tags": [
+        "lv5",
+        "gallery"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X89",
+      "set": "extra",
+      "level": 4,
+      "lang": "en",
+      "question": "Which faculty runs Inno Wing and how many 3D printers does the Centre run?",
+      "expected": "Faculty of Engineering; 7 printers.",
+      "expected_notes": "Compound mixing Lv1/2 faculty with Lv4 count — routing should still split.",
+      "why_in_scope": "Cross-level compound.",
+      "source": "G10+G07",
+      "tags": [
+        "lv4",
+        "compound"
+      ],
+      "failure_mode": ""
+    },
+    {
+      "id": "X90",
+      "set": "extra",
+      "level": 3,
+      "lang": "en",
+      "question": "From the Makerspace close-up photo, what labels or stickers are readable on the equipment?",
+      "expected": "Transcribe stickers from Labs/images/Makerspace close up.JPG (practice) or team photos.",
+      "expected_notes": "Close-up is where small-print / tiling matters.",
+      "why_in_scope": "Lv3/Lv5 small text on equipment.",
+      "source": "Labs/images/Makerspace close up.JPG",
+      "tags": [
+        "lv3",
+        "lv5",
+        "ocr"
+      ],
+      "failure_mode": ""
+    }
+  ]
+}
