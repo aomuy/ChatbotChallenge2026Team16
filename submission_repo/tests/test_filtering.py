@@ -175,6 +175,36 @@ class IngestionTests(unittest.TestCase):
         self.assertEqual(metadata[1]["image_type"], "photo")
         self.assertEqual(metadata[1]["image"], "photo.png")
 
+    def test_alt_only_images_are_indexed_without_a_description(self):
+        images = [{
+            "src": "https://x/wp-content/uploads/2025/10/winner.jpg",
+            "page": "https://innoacademy.engg.hku.hk/",
+            "alt": "Digitoe, Winner of 2025 Pitch New Tech Ideas",
+            "caption": "",
+        }]
+        with patch("build.images.get_store"), patch("build.images.add_to_store") as add:
+            index_descriptions({}, images)
+        texts = add.call_args.args[1]
+        meta = add.call_args.args[2][0]
+        self.assertIn("Digitoe", texts[0])
+        self.assertEqual(meta["kind"], "image")
+        self.assertEqual(meta["year"], 2025)
+
+    def test_year_is_inferred_from_wordpress_upload_path(self):
+        images = [{
+            "src": "https://x/wp-content/uploads/2025/11/workshop-poster.png",
+            "page": "https://innoacademy.engg.hku.hk",
+        }]
+        with patch("build.images.get_store"), patch("build.images.add_to_store") as add:
+            index_descriptions(
+                {"https://x/wp-content/uploads/2025/11/workshop-poster.png":
+                 json.dumps({"description": "A workshop poster", "image_type": "poster"})},
+                images,
+            )
+        meta = add.call_args.args[2][0]
+        self.assertEqual(meta["year"], 2025)
+        self.assertEqual(meta["image_type"], "poster")
+
     def test_page_metadata_is_preserved_for_all_chunks(self):
         pages = [{"url": "venue/1", "title": "Venue",
                   "page_type": "venue", "capacity": 40, "year": 2025, "images": [],

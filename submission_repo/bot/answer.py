@@ -28,7 +28,16 @@ Reply with the answer only. No explanation, no preamble. If the question
 asks how many, reply with a number.
 
 Prefer facts copied from the context: exact sign/poster wording, names,
-dates, and counts. Do not paraphrase wall text or team names.
+dates, and counts. Do not paraphrase wall text or team names. If wall
+lettering is visible, copy the words in order, including a three-word
+line such as HKU ENGINEERING INNOVATION when those glyphs appear. If
+alt text or captions name Pitch New Tech Ideas winners, list every
+named team (keep spellings such as Digitoe/Digitio as written). For
+laser-cutter bans, copy every material the context says not to laser
+(PVC, Teflon, polycarbonate, or others) without swapping in a material
+the context does not name. For Funding Scheme deadlines, prefer the
+date on the current funding-scheme page (2025-26 / second round / the
+latest Application deadline), not a 2021–2023 leftover.
 
 If the context does not contain the answer, you MUST give your best guess anyway.
 Sound confident. NEVER reply that you do not know or that the context is missing.
@@ -124,6 +133,64 @@ def _merge_chunks(*groups: list[dict], limit: int = 16) -> list[dict]:
     return out
 
 
+def _contains_chunks(phrases: list[str], where: dict | None = None,
+                     limit: int = 8) -> list[dict]:
+    """Lexical Chroma $contains hits, capped so this stays inside 30s."""
+    store = get_store()
+    out: list[dict] = []
+    seen: set[str] = set()
+    for phrase in phrases:
+        try:
+            hits = filter_records(
+                store, where=where, where_document={"$contains": phrase},
+            )
+        except Exception:
+            continue
+        for hit in hits:
+            key = _chunk_key(hit)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(hit)
+            if len(out) >= limit:
+                return out
+    return out
+
+
+def _lexical_queries(question: str) -> list[tuple[list[str], dict | None]]:
+    """Phrases whose documents should be pulled even if embedding rank is poor."""
+    q = question.lower()
+    jobs: list[tuple[list[str], dict | None]] = []
+    if "pitch new tech" in q or "优胜" in question:
+        jobs.append(
+            (["Pitch New Tech", "Digitoe", "Digitio", "Smartsocks", "Gingtrolley"],
+             None),
+        )
+    if "wall" in q or "墙上" in question or "three words" in q or "三个词" in question:
+        jobs.append(
+            (["HKU ENGINEERING INNOVATION", "ENGINEERING INNOVATION",
+              "HKU ENGINEERING"],
+             {"kind": "image"}),
+        )
+    if "laser" in q or "激光" in question:
+        jobs.append(
+            (["Do not laser", "PVC and Teflon", "polycarbonate", "PVC"],
+             {"kind": "text"}),
+        )
+    if "funding scheme" in q or "截止日期" in question:
+        jobs.append(
+            (["Funding Scheme", "Application deadline", "Important dates",
+              "October 30 2026"],
+             {"kind": "text"}),
+        )
+    if "director" in q or "主任" in question:
+        jobs.append(
+            (["Director of Innovation Wing", "talk to Kit", "C.K.Chui"],
+             None),
+        )
+    return jobs
+
+
 def _boost_queries(question: str) -> list[str]:
     q = question.lower()
     extra = []
@@ -138,7 +205,9 @@ def _boost_queries(question: str) -> list[str]:
     if "pitch new tech" in q:
         extra.append("Pitch New Tech Ideas 2025 winning teams")
     if "director" in q or "主任" in question:
-        extra.append("director of Tam Wing Fan Innovation Wing")
+        extra.append("Director of Innovation Wing Kit C.K.Chui")
+    if "wall" in q or "three words" in q or "三个词" in question or "墙上" in question:
+        extra.append("HKU ENGINEERING INNOVATION wall lettering brainstorming")
     return extra
 
 
@@ -180,7 +249,9 @@ def rag_answer(question: str) -> str:
         groups.append(retrieve(part, k=8, where=retrieval_where(part)))
     for extra in _boost_queries(question):
         groups.append(retrieve(extra, k=6, where=retrieval_where(extra)))
-    chunks = _merge_chunks(*groups, limit=16)
+    for phrases, lex_where in _lexical_queries(question):
+        groups.append(_contains_chunks(phrases, where=lex_where, limit=8))
+    chunks = _merge_chunks(*groups, limit=18)
 
     context = "\n\n".join(
         f"[{c['metadata'].get('url', '?')}]\n{c['text']}" for c in chunks

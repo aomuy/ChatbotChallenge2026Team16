@@ -33,7 +33,10 @@ _TEXT_MODALITY = re.compile(
     r"\bopening hours\b|"
     r"\b(book|booking|bookings)\b|"
     r"\bmaterials?\b|"
-    r"\binterest groups?\b",
+    r"\binterest groups?\b|"
+    r"\blaser cutter\b|"
+    r"\bfunding scheme\b|"
+    r"激光|禁止|截止日期",
     re.IGNORECASE,
 )
 

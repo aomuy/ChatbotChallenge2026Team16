@@ -74,6 +74,21 @@ class RetrievalWhereTests(unittest.TestCase):
             {"kind": "image"},
         )
 
+    def test_chinese_laser_routes_to_text(self):
+        self.assertEqual(
+            retrieval_where("激光切割机禁止使用哪两种材料？"),
+            {"kind": "text"},
+        )
+
+    def test_funding_deadline_routes_to_text(self):
+        self.assertEqual(
+            retrieval_where(
+                "When was the deadline for the second round of the "
+                "Funding Scheme in 2025-26?"
+            ),
+            {"kind": "text"},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

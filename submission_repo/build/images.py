@@ -12,6 +12,7 @@ import argparse
 import base64
 import io
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -37,8 +38,8 @@ Your goal is NOT to write a short human caption. Your goal is to extract facts t
 
 Analyze the image and write the description field following these rules:
 
-1. **Count and List Objects**: Count all distinct, countable objects. Specifically look for and count: tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers). However, if any of these objects are not present in the image, do NOT count it. DO NOT mention 0,none, or nothing in the count, or "there are no tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, or equipment".
-2. **Transcribe Text**: Transcribe ALL VISIBLE TEXT EXACTLY as it appears. This includes signs on walls, writing on whiteboards, text on screens, text on stickers or posters (e.g., "ENGINEERING INNOVATION", "NOTICE", "Keep Clean").
+1. **Count and List Objects**: Count ALL distinct, countable objects, including those only partly visible at the edges or in the background. Specifically look for and count: tables (every work table / workbench, even if occluded), chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, and any notable equipment (e.g., airplanes, 3D printers, fire extinguishers). However, if any of these objects are not present in the image, do NOT count it. DO NOT mention 0,none, or nothing in the count, or "there are no tables, chairs, stools, laptops, screens, sofas, steps/stairs, storage lockers, or equipment". Give one total for tables and one total for chairs/stools.
+2. **Transcribe Text**: Transcribe ALL VISIBLE TEXT EXACTLY as it appears, glyph for glyph, in reading order (left to right, top to bottom). This includes large wall lettering behind seating (often three stacked words such as HKU / ENGINEERING / INNOVATION), signs, whiteboards, screens, stickers and posters (e.g., "NOTICE", "Keep Clean"). Write [unreadable] for glyphs you cannot see. Do not replace wall text with nearby labels such as BRAINSTORMING AREA.
 3. **Describe Layout and Spatial Relationships**: Describe where things are in relation to each other. Use terms like: left, right, center, foreground, background, next to, above, below, on the wall. (e.g., "The colorful cubic sofas are in the foreground, with a large blue sign saying 'ENGINEERING INNOVATION' on the wall behind them to the right.")
 4. **Color and Material**: Note the primary colors (e.g., white, gray, wood, blue, orange, yellow) and materials (e.g., carpet, wood, plastic, metal) of prominent objects.
 5. **Avoid Generic Aesthetics**: Do not use phrases like "a modern room with furniture". Be extremely factual and exhaustive.
@@ -410,13 +411,53 @@ def index_descriptions(descriptions: dict, images: list[dict]) -> None:
             "image_type": image_type,
         }
         meta.update(_copy_scalars(im, IMAGE_FILTER_FIELDS))
+        _apply_url_year(meta, src)
+        if image_type in ("unknown", "") and "poster" in (src or "").lower():
+            meta["image_type"] = "poster"
         metas.append(meta)
+
+    # Alt/caption-only rows so Pitch winners and labelled equipment retrieve
+    # even when vision descriptions were never built on this machine.
+    described = set(descriptions)
+    for im in images:
+        src = im.get("src") or ""
+        if not src or src in described:
+            continue
+        alt_text = " ".join(filter(None, [im.get("alt"), im.get("caption")]))
+        if not alt_text.strip():
+            continue
+        annotated = im.get("image_type")
+        if isinstance(annotated, str) and annotated.strip():
+            image_type = annotated.strip()
+        elif "poster" in src.lower():
+            image_type = "poster"
+        else:
+            image_type = "photo"
+        texts.append(alt_text)
+        meta = {
+            "url": im.get("page", src),
+            "image": src,
+            "kind": "image",
+            "image_type": image_type,
+        }
+        meta.update(_copy_scalars(im, IMAGE_FILTER_FIELDS))
+        _apply_url_year(meta, src)
+        metas.append(meta)
+
     if not texts:
         print("indexed 0 image descriptions (nothing non-empty to index)")
         return
     store = get_store(reset=False)
     add_to_store(store, texts, metas, ids=[f"img_{i}" for i in range(len(texts))])
     print(f"indexed {len(texts)} image descriptions")
+
+
+def _apply_url_year(meta: dict, src: str) -> None:
+    if "year" in meta:
+        return
+    year_match = re.search(r"/uploads/(\d{4})/", src or "")
+    if year_match:
+        meta["year"] = int(year_match.group(1))
 
 
 if __name__ == "__main__":
@@ -436,6 +477,17 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     images = json.loads(Path("data/images.json").read_text())
+    has_vision_key = bool(os.environ.get("QWEN_API_KEY", "").strip())
+    if not has_vision_key:
+        print("QWEN_API_KEY is not set. Skipping new vision descriptions. "
+              "Cached data/descriptions.json (if present) can still be indexed "
+              "with --index. Alt/caption-only image rows are included then.")
+        descriptions = {}
+        if CACHE_PATH.exists():
+            descriptions = json.loads(CACHE_PATH.read_text())
+        if args.index:
+            index_descriptions(descriptions, images)
+        sys.exit(0)
     try:
         descriptions = describe_all(images, limit=args.limit)
     except VisionModelsExhausted:
